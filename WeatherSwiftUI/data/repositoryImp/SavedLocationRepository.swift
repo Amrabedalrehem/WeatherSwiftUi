@@ -5,7 +5,6 @@
 //  Created by JETSMobileLabMini2 on 01/06/2026.
 //
 
-
 import Foundation
 import SwiftData
 
@@ -33,23 +32,19 @@ class SavedLocationRepository: SavedLocationRepositoryProtocol {
     }
     
     func isLocationSaved(name: String) throws -> Bool {
-        let descriptor = FetchDescriptor<SavedLocation>(
-            predicate: #Predicate { $0.name == name }
-        )
+          let descriptor = FetchDescriptor<SavedLocation>()
         let results = try modelContext.fetch(descriptor)
-        return !results.isEmpty
+        return results.contains { $0.name == name }
     }
 
     func toggleLocation(_ location: SavedLocation) throws {
-        let descriptor = FetchDescriptor<SavedLocation>(
-            predicate: #Predicate { $0.name == location.name }
-        )
+          let descriptor = FetchDescriptor<SavedLocation>()
         let results = try modelContext.fetch(descriptor)
         
-        if let existing = results.first {
-             modelContext.delete(existing)
+        if let existing = results.first(where: { $0.name == location.name }) {
+            modelContext.delete(existing)
         } else {
-         modelContext.insert(location)
+            modelContext.insert(location)
         }
         try modelContext.save()
     }
