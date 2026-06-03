@@ -45,7 +45,7 @@ struct WeatherCastApp: App {
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootView()
                 .environmentObject(viewModel)
                 .environmentObject(locationManager)
                 .modelContainer(container)
@@ -53,6 +53,25 @@ struct WeatherCastApp: App {
                 .onAppear {
                     locationManager.requestPermission()
                 }
+        }
+    }
+}
+ struct RootView: View {
+    @State private var splashDone: Bool = false
+
+    var body: some View {
+        ZStack {
+            ContentView()
+                .opacity(splashDone ? 1 : 0)
+
+            if !splashDone {
+                SplashScreenView {
+                    withAnimation(.easeInOut(duration: 0.6)) {
+                        splashDone = true
+                    }
+                }
+                .transition(.opacity)
+            }
         }
     }
 }
