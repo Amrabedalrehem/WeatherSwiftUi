@@ -32,6 +32,7 @@ struct Current: Codable, Hashable, Equatable {
     let pressure_mb: Double
     let vis_km: Double
     let condition: Condition
+    let is_day: Int  
 }
 
 struct Condition: Codable, Hashable, Equatable {

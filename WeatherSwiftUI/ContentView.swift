@@ -10,7 +10,8 @@ struct ContentView: View {
     @State private var selectedDay: ForecastDay? = nil
     @State private var currentPage: Int = 0
 
-      private var allWeatherPages: [WeatherResponse] {
+    @State private var isInitialLoad: Bool = true
+     private var allWeatherPages: [WeatherResponse] {
         var pages: [WeatherResponse] = []
         if let current = viewModel.weatherResponse {
             pages.append(current)
@@ -19,15 +20,27 @@ struct ContentView: View {
         return pages
     }
 
-      private var totalPages: Int {
+    private var totalPages: Int {
         allWeatherPages.count
     }
 
     var body: some View {
         NavigationStack {
             ZStack(alignment: .bottom) {
-    if !allWeatherPages.isEmpty {
-                      TabView(selection: $currentPage) {
+                 if isInitialLoad
+                    || (viewModel.isLoading && allWeatherPages.isEmpty)
+                    || (locationManager.authorizationStatus == .notDetermined && allWeatherPages.isEmpty) {
+
+                    ZStack {
+                        Color(red: 0.1, green: 0.25, blue: 0.45)
+                            .ignoresSafeArea()
+                        ProgressView("Loading Weather...")
+                            .tint(.white)
+                            .foregroundColor(.white)
+                            .font(.headline)
+                    }
+           } else if !allWeatherPages.isEmpty {
+                    TabView(selection: $currentPage) {
                         ForEach(Array(allWeatherPages.enumerated()), id: \.offset) { index, weather in
                             WeatherPageView(
                                 weather: weather,
@@ -46,17 +59,7 @@ struct ContentView: View {
                         }
                     }
 
-                } else if viewModel.isLoading {
-                    ZStack {
-                        Color(red: 0.1, green: 0.25, blue: 0.45)
-                            .ignoresSafeArea()
-                        ProgressView("Loading Weather...")
-                            .tint(.white)
-                            .foregroundColor(.white)
-                            .font(.headline)
-                    }
-
-                } else if let error = viewModel.errorMessage {
+                  } else if let error = viewModel.errorMessage {
                     ZStack {
                         Color(red: 0.1, green: 0.25, blue: 0.45)
                             .ignoresSafeArea()
@@ -75,36 +78,38 @@ struct ContentView: View {
                         .ignoresSafeArea()
                 }
 
-                  VStack(spacing: 12) {
-             if totalPages > 1 {
-                        HStack(spacing: 8) {
-                            ForEach(0..<totalPages, id: \.self) { index in
-                                if index == 0 {
-                                      Image(systemName: "location.fill")
-                                        .font(.system(size: 8))
-                                        .foregroundColor(currentPage == 0 ? .white : .white.opacity(0.4))
-                                        .scaleEffect(currentPage == 0 ? 1.3 : 1.0)
-                                        .animation(.spring(response: 0.3), value: currentPage)
-                                } else {
-                                    Circle()
-                                        .fill(currentPage == index ? .white : .white.opacity(0.35))
-                                        .frame(width: currentPage == index ? 8 : 6, height: currentPage == index ? 8 : 6)
-                                        .animation(.spring(response: 0.3), value: currentPage)
+                  if !allWeatherPages.isEmpty {
+                    VStack(spacing: 12) {
+                        if totalPages > 1 {
+                            HStack(spacing: 8) {
+                                ForEach(0..<totalPages, id: \.self) { index in
+                                    if index == 0 {
+                                        Image(systemName: "location.fill")
+                                            .font(.system(size: 8))
+                                            .foregroundColor(currentPage == 0 ? .white : .white.opacity(0.4))
+                                            .scaleEffect(currentPage == 0 ? 1.3 : 1.0)
+                                            .animation(.spring(response: 0.3), value: currentPage)
+                                    } else {
+                                        Circle()
+                                            .fill(currentPage == index ? .white : .white.opacity(0.35))
+                                            .frame(width: currentPage == index ? 8 : 6,
+                                                   height: currentPage == index ? 8 : 6)
+                                            .animation(.spring(response: 0.3), value: currentPage)
+                                    }
                                 }
                             }
+                            .padding(.vertical, 6)
+                            .padding(.horizontal, 16)
+                            .background(.ultraThinMaterial, in: Capsule())
                         }
-                        .padding(.vertical, 6)
-                        .padding(.horizontal, 16)
-                        .background(.ultraThinMaterial, in: Capsule())
+
+                        floatingSearchBar
                     }
-
-                      floatingSearchBar
-
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 30)
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 30)
-
-            }   .ignoresSafeArea()
+            }
+            .ignoresSafeArea()
             .navigationBarHidden(true)
             .toolbarBackground(.hidden, for: .navigationBar)
             .preferredColorScheme(.dark)
@@ -114,29 +119,50 @@ struct ContentView: View {
             .navigationDestination(item: $selectedDay) { day in
                 HourlyView(forecastDay: day, fontColor: .white)
             }
-            .onAppear {
-                if locationManager.authorizationStatus == .denied || locationManager.authorizationStatus == .restricted {
-                    if viewModel.weatherResponse == nil {
-                        Task { await viewModel.fetchDefaultWeather() }
-                    }
-                } else if locationManager.authorizationStatus == .notDetermined {
+             .onAppear {
+                Task {
+                      await viewModel.fetchAllSavedWeather()
+                         let status = locationManager.authorizationStatus
+                    if status == .notDetermined {
+                        locationManager.requestPermission()
+                    } else if status == .denied || status == .restricted {
+                        await viewModel.fetchDefaultWeather()
+                    } else if status == .authorizedWhenInUse || status == .authorizedAlways {
+                        if let location = locationManager.currentLocation {
+                            await viewModel.fetchWeather(
+                                lat: location.coordinate.latitude,
+                                lon: location.coordinate.longitude
+                            )
+                        } else {
+                            locationManager.startUpdatingLocation()
                         }
-                Task { await viewModel.fetchAllSavedWeather() }
-            }
-            .onChange(of: locationManager.authorizationStatus) { _, status in
-                if status == .denied || status == .restricted {
-                    if viewModel.weatherResponse == nil {
-                        Task { await viewModel.fetchDefaultWeather() }
+                    }
+
+                    withAnimation(.easeIn(duration: 0.3)) {
+                        isInitialLoad = false
                     }
                 }
             }
-            .onChange(of: locationManager.currentLocation) { _, newLocation in
+              .onChange(of: locationManager.authorizationStatus) { _, status in
+                Task {
+                    if status == .denied || status == .restricted {
+                        if viewModel.weatherResponse == nil {
+                            await viewModel.fetchDefaultWeather()
+                        }
+                    } else if status == .authorizedWhenInUse || status == .authorizedAlways {
+                        locationManager.startUpdatingLocation()
+                    }
+                }
+            }
+              .onChange(of: locationManager.currentLocation) { _, newLocation in
                 guard let location = newLocation else { return }
                 Task {
                     await viewModel.fetchWeather(
                         lat: location.coordinate.latitude,
                         lon: location.coordinate.longitude
                     )
+                    withAnimation {
+                        currentPage = 0      }
                 }
             }
             .onChange(of: navigateToSearch) { _, isShowing in
@@ -147,7 +173,7 @@ struct ContentView: View {
         }
     }
 
-       private var floatingSearchBar: some View {
+      private var floatingSearchBar: some View {
         Button(action: {
             withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
                 searchBarPressed = true

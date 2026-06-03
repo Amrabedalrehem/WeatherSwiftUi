@@ -13,8 +13,8 @@ enum WeatherVideo: String, CaseIterable {
     case rainy   = "rainy"
     case thunder = "thunder"
     case snow    = "snow"
-    case cloudy  = " cloudy"
-    case night   = "nigth"
+    case cloudy  = "cloudy"
+    case night   = "night"
     var keywords: [String] {
         switch self {
         case .sunny:   return ["sunny", "clear"]
@@ -68,11 +68,12 @@ enum WeatherVideo: String, CaseIterable {
         uiView.updateVideo(named: videoName)
     }
 }
- class PlayerContainerView: UIView {
+class PlayerContainerView: UIView {
 
     private var player: AVQueuePlayer?
     private var playerLayer: AVPlayerLayer?
     private var playerLooper: AVPlayerLooper?
+    private var gradientLayer: CAGradientLayer?
     private(set) var currentVideoName: String?
 
     init() {
@@ -84,8 +85,53 @@ enum WeatherVideo: String, CaseIterable {
         fatalError("init(coder:) has not been implemented")
     }
 
+      private func showFallbackGradient(for name: String) {
+        gradientLayer?.removeFromSuperlayer()
+        let gradient = CAGradientLayer()
+        gradient.frame = bounds
+
+        switch name {
+        case "sunny":
+            gradient.colors = [UIColor(red: 0.98, green: 0.75, blue: 0.20, alpha: 1).cgColor,
+                               UIColor(red: 0.95, green: 0.55, blue: 0.10, alpha: 1).cgColor,
+                               UIColor(red: 0.40, green: 0.70, blue: 0.95, alpha: 1).cgColor]
+        case "cloudy":
+            gradient.colors = [UIColor(red: 0.55, green: 0.60, blue: 0.70, alpha: 1).cgColor,
+                               UIColor(red: 0.70, green: 0.75, blue: 0.82, alpha: 1).cgColor,
+                               UIColor(red: 0.85, green: 0.87, blue: 0.90, alpha: 1).cgColor]
+        case "rainy":
+            gradient.colors = [UIColor(red: 0.15, green: 0.20, blue: 0.35, alpha: 1).cgColor,
+                               UIColor(red: 0.30, green: 0.38, blue: 0.55, alpha: 1).cgColor,
+                               UIColor(red: 0.45, green: 0.55, blue: 0.70, alpha: 1).cgColor]
+        case "thunder":
+            gradient.colors = [UIColor(red: 0.08, green: 0.08, blue: 0.15, alpha: 1).cgColor,
+                               UIColor(red: 0.20, green: 0.18, blue: 0.30, alpha: 1).cgColor,
+                               UIColor(red: 0.35, green: 0.32, blue: 0.45, alpha: 1).cgColor]
+        case "snow":
+            gradient.colors = [UIColor(red: 0.75, green: 0.85, blue: 0.95, alpha: 1).cgColor,
+                               UIColor(red: 0.88, green: 0.92, blue: 0.97, alpha: 1).cgColor,
+                               UIColor(red: 0.95, green: 0.97, blue: 1.00, alpha: 1).cgColor]
+        case "night":
+            gradient.colors = [UIColor(red: 0.03, green: 0.05, blue: 0.15, alpha: 1).cgColor,
+                               UIColor(red: 0.08, green: 0.10, blue: 0.28, alpha: 1).cgColor,
+                               UIColor(red: 0.12, green: 0.15, blue: 0.38, alpha: 1).cgColor]
+        default:
+            gradient.colors = [UIColor(red: 0.25, green: 0.50, blue: 0.80, alpha: 1).cgColor,
+                               UIColor(red: 0.50, green: 0.75, blue: 0.95, alpha: 1).cgColor]
+        }
+
+        gradient.startPoint = CGPoint(x: 0.5, y: 0)
+        gradient.endPoint   = CGPoint(x: 0.5, y: 1)
+        self.gradientLayer = gradient
+        self.layer.insertSublayer(gradient, at: 0)
+        self.currentVideoName = name
+    }
+
     func updateVideo(named name: String) {
-        guard let path = Bundle.main.path(forResource: name, ofType: "mp4") else { return }
+        guard let path = Bundle.main.path(forResource: name, ofType: "mp4") else {
+               showFallbackGradient(for: name)
+            return
+        }
         let url = URL(fileURLWithPath: path)
 
            let templateItem = AVPlayerItem(url: url)
@@ -127,7 +173,7 @@ enum WeatherVideo: String, CaseIterable {
     override func layoutSubviews() {
         super.layoutSubviews()
         playerLayer?.frame = bounds
-    }
+        gradientLayer?.frame = bounds     }
 
     deinit {
         player?.pause()

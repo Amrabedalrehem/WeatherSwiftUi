@@ -1,11 +1,3 @@
-//
-//  WeatherViewModel.swift
-//  WeatherSwiftUI
-//
-//  Created by JETSMobileLabMini2 on 01/06/2026.
-//
-
-
 import Foundation
 import SwiftUI
 
@@ -26,8 +18,7 @@ class WeatherViewModel: ObservableObject {
     private let toggleLocationUseCase: ToggleLocationUseCase
     private let isLocationSavedUseCase: IsLocationSavedUseCase
   
-    private let defaultLat: Double = 30.5965
-    private let defaultLon: Double = 32.2715
+    private let defaultCity: String = "Ismailia"
  
     init(
         fetchWeatherUseCase: FetchWeatherUseCase,
@@ -48,7 +39,15 @@ class WeatherViewModel: ObservableObject {
     }
     
     func fetchDefaultWeather() async {
-        await fetchWeather(lat: defaultLat, lon: defaultLon)
+        isLoading = true
+        errorMessage = nil
+        do {
+            weatherResponse = try await searchCityUseCase.execute(query: defaultCity)
+            checkIfCurrentLocationSaved()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isLoading = false
     }
     
     func fetchWeather(lat: Double, lon: Double) async {
@@ -66,10 +65,10 @@ class WeatherViewModel: ObservableObject {
         isLoading = false
     }
     
-     func searchCity(query: String) async throws -> WeatherResponse {
+    func searchCity(query: String) async throws -> WeatherResponse {
         isLoading = true
         defer { isLoading = false }
-         errorMessage = nil
+        errorMessage = nil
         
         do {
             return try await searchCityUseCase.execute(query: query)
@@ -97,7 +96,6 @@ class WeatherViewModel: ObservableObject {
         }
     }
     
-  
     func toggleLocationFromSearch(location: SavedLocation) {
         do {
             try toggleLocationUseCase.execute(location)
@@ -117,7 +115,7 @@ class WeatherViewModel: ObservableObject {
         }
     }
 
-      func fetchAllSavedWeather() async {
+    func fetchAllSavedWeather() async {
         fetchSavedLocations()
         guard !savedLocations.isEmpty else {
             savedWeatherResponses = []
@@ -144,7 +142,7 @@ class WeatherViewModel: ObservableObject {
                 }
             }
 
-               savedWeatherResponses = results
+            savedWeatherResponses = results
                 .sorted { $0.0 < $1.0 }
                 .map { $0.1 }
         }

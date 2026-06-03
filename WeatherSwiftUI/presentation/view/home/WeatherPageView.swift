@@ -13,9 +13,10 @@ struct WeatherPageView: View {
     let isCurrentLocation: Bool
     @Binding var selectedDay: ForecastDay?
     @EnvironmentObject var viewModel: WeatherViewModel
+    @State private var showRemoveAlert: Bool = false
 
     private func checkIfIsDay() -> Bool {
-        return !weather.current.condition.icon.lowercased().contains("night")
+        return weather.current.is_day == 1   
     }
 
     private var fontColor: Color {
@@ -49,17 +50,35 @@ struct WeatherPageView: View {
 
                             if !isCurrentLocation {
                                 Button(action: {
-                                    let location = SavedLocation(
-                                        name: weather.location.name,
-                                        lat: weather.location.lat,
-                                        lon: weather.location.lon,
-                                        country: weather.location.country
-                                    )
-                                    viewModel.toggleLocationFromSearch(location: location)
+                                    if viewModel.isLocationSaved(name: weather.location.name) {
+                                          showRemoveAlert = true
+                                    } else {
+                                          let location = SavedLocation(
+                                            name: weather.location.name,
+                                            lat: weather.location.lat,
+                                            lon: weather.location.lon,
+                                            country: weather.location.country
+                                        )
+                                        viewModel.toggleLocationFromSearch(location: location)
+                                    }
                                 }) {
                                     Image(systemName: viewModel.isLocationSaved(name: weather.location.name) ? "star.fill" : "star")
                                         .foregroundColor(viewModel.isLocationSaved(name: weather.location.name) ? .yellow : fontColor)
                                         .font(.system(size: 22))
+                                }
+                                .alert("Remove Favorite?", isPresented: $showRemoveAlert) {
+                                    Button("Remove", role: .destructive) {
+                                        let location = SavedLocation(
+                                            name: weather.location.name,
+                                            lat: weather.location.lat,
+                                            lon: weather.location.lon,
+                                            country: weather.location.country
+                                        )
+                                        viewModel.toggleLocationFromSearch(location: location)
+                                    }
+                                    Button("Cancel", role: .cancel) { }
+                                } message: {
+                                    Text("Are you sure you want to remove \(weather.location.name) from your favorites?")
                                 }
                             }
 
