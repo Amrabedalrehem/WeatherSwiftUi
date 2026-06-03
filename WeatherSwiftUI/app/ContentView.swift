@@ -6,9 +6,10 @@ struct ContentView: View {
     @EnvironmentObject var locationManager: LocationManager
 
     @State private var navigateToSearch: Bool = false
-    @State private var searchBarPressed: Bool = false
+    @State private var navigateToManage: Bool = false
     @State private var selectedDay: ForecastDay? = nil
     @State private var currentPage: Int = 0
+    @State private var showShareSheet: Bool = false
 
     @State private var isInitialLoad: Bool = true
      private var allWeatherPages: [WeatherResponse] {
@@ -80,7 +81,7 @@ struct ContentView: View {
 
                   if !allWeatherPages.isEmpty {
                     VStack(spacing: 12) {
-                        if totalPages > 1 {
+                          if totalPages > 1 {
                             HStack(spacing: 8) {
                                 ForEach(0..<totalPages, id: \.self) { index in
                                     if index == 0 {
@@ -103,7 +104,46 @@ struct ContentView: View {
                             .background(.ultraThinMaterial, in: Capsule())
                         }
 
-                        floatingSearchBar
+                          HStack(spacing: 20) {
+                              if let weather = currentWeather {
+                                Button {
+                                    showShareSheet = true
+                                } label: {
+                                    ZStack {
+                                        Circle()
+                                            .fill(.ultraThinMaterial)
+                                            .frame(width: 52, height: 52)
+                                        Circle()
+                                            .stroke(.white.opacity(0.25), lineWidth: 1)
+                                            .frame(width: 52, height: 52)
+                                        Image(systemName: "square.and.arrow.up")
+                                            .font(.system(size: 18, weight: .semibold))
+                                            .foregroundColor(.white)
+                                    }
+                                    .shadow(color: .black.opacity(0.25), radius: 12, x: 0, y: 6)
+                                }
+                            }
+
+                            Spacer()
+
+                               Button {
+                                navigateToManage = true
+                            } label: {
+                                ZStack {
+                                    Circle()
+                                        .fill(.ultraThinMaterial)
+                                        .frame(width: 52, height: 52)
+                                    Circle()
+                                        .stroke(.white.opacity(0.25), lineWidth: 1)
+                                        .frame(width: 52, height: 52)
+                                    Image(systemName: "plus")
+                                        .font(.system(size: 20, weight: .semibold))
+                                        .foregroundColor(.white)
+                                }
+                                .shadow(color: .black.opacity(0.25), radius: 12, x: 0, y: 6)
+                            }
+                        }
+                        .padding(.horizontal, 30)
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 30)
@@ -113,8 +153,8 @@ struct ContentView: View {
             .navigationBarHidden(true)
             .toolbarBackground(.hidden, for: .navigationBar)
             .preferredColorScheme(.dark)
-            .navigationDestination(isPresented: $navigateToSearch) {
-                SearchView().environmentObject(viewModel)
+            .navigationDestination(isPresented: $navigateToManage) {
+                ManageCitiesView().environmentObject(viewModel)
             }
             .navigationDestination(item: $selectedDay) { day in
                 HourlyView(forecastDay: day, isDay: currentPage < allWeatherPages.count ? allWeatherPages[currentPage].current.is_day == 1 : true)
@@ -165,61 +205,51 @@ struct ContentView: View {
                         currentPage = 0      }
                 }
             }
-            .onChange(of: navigateToSearch) { _, isShowing in
+            .onChange(of: navigateToManage) { _, isShowing in
                 if !isShowing {
                     Task { await viewModel.fetchAllSavedWeather() }
                 }
             }
+            .sheet(isPresented: $showShareSheet) {
+                if let weather = currentWeather {
+                    ShareSheet(activityItems: [shareText(for: weather)])
+                        .presentationDetents([.medium, .large])
+                }
+            }
         }
     }
 
-      private var floatingSearchBar: some View {
-        Button(action: {
-            withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
-                searchBarPressed = true
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-                withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
-                    searchBarPressed = false
-                }
-                navigateToSearch = true
-            }
-        }) {
-            HStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(.white.opacity(0.18))
-                        .frame(width: 38, height: 38)
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.white)
-                }
-
-                Text("Search city or location...")
-                    .font(.system(size: 16, weight: .regular))
-                    .foregroundColor(.white.opacity(0.55))
-
-                Spacer()
-
-                ZStack {
-                    Circle()
-                        .fill(.white.opacity(0.12))
-                        .frame(width: 38, height: 38)
-                    Image(systemName: "location.fill")
-                        .font(.system(size: 14))
-                        .foregroundColor(.cyan.opacity(0.9))
-                }
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 9)
-            .background(.ultraThinMaterial, in: Capsule())
-            .overlay(
-                Capsule()
-                    .stroke(.white.opacity(0.22), lineWidth: 1)
-            )
-            .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
-            .scaleEffect(searchBarPressed ? 0.96 : 1.0)
-        }
-        .buttonStyle(.plain)
+      private var currentWeather: WeatherResponse? {
+        guard currentPage < allWeatherPages.count else { return nil }
+        return allWeatherPages[currentPage]
     }
+
+    private func shareText(for weather: WeatherResponse) -> String {
+        let temp  = Int(weather.current.temp_c)
+        let city  = weather.location.name
+        let cond  = weather.current.condition.text
+        let hi    = Int(weather.forecast.forecastday.first?.day.maxtemp_c ?? 0)
+        let lo    = Int(weather.forecast.forecastday.first?.day.mintemp_c ?? 0)
+        return """
+        🌤 Weather in \(city)
+        🌡 \(temp)°C — \(cond)
+        ↑ H: \(hi)°  ↓ L: \(lo)°
+        
+        Shared via WeatherSwiftUI
+        """
+    }
+}
+ struct ShareSheet: UIViewControllerRepresentable {
+    var activityItems: [Any]
+    var applicationActivities: [UIActivity]? = nil
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let controller = UIActivityViewController(
+            activityItems: activityItems,
+            applicationActivities: applicationActivities
+        )
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }

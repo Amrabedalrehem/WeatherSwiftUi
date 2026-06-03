@@ -70,7 +70,7 @@ struct SearchView: View {
                         HStack(spacing: 6) {
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 16, weight: .semibold))
-                            Text("Home")
+                            Text("Back")
                                 .font(.system(size: 16, weight: .medium))
                         }
                         .foregroundColor(fontColor)
@@ -119,11 +119,7 @@ struct SearchView: View {
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 24) {
 
-                        if !viewModel.savedLocations.isEmpty {
-                            savedLocationsSection
-                                .padding(.horizontal, 20)
-                        }
-     suggestionsSection
+                        suggestionsSection
                             .padding(.horizontal, 20)
                             .padding(.bottom, 30)
                     }
@@ -231,33 +227,7 @@ struct SearchView: View {
         }
     }
 
-      private var savedLocationsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 6) {
-                Image(systemName: "star.fill")
-                    .foregroundColor(.yellow)
-                    .font(.system(size: 11))
-                Text("SAVED LOCATIONS")
-                    .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(fontColor.opacity(0.75))
-            }
 
-            VStack(spacing: 10) {
-                ForEach(viewModel.savedLocations, id: \.name) { location in
-                    SavedLocationRowView(location: location, fontColor: fontColor)
-                        .onTapGesture {
-                            Task {
-                                do {
-                                    let result = try await viewModel.searchCity(query: location.name)
-                                    selectedPreviewWeather = result
-                                } catch {
-                                                    }
-                            }
-                        }
-                }
-            }
-        }
-    }
    private var suggestionsSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 6) {
