@@ -348,23 +348,6 @@ struct SuggestionCityCard: View {
     let delay: Double
     let animate: Bool
 
-      private var regionColor: (Color, Color) {
-        let country = city.country.lowercased()
-        if ["egypt", "morocco", "nigeria", "kenya", "south africa", "tunisia"].contains(country) {
-            return (Color(red: 0.9, green: 0.5, blue: 0.1), Color(red: 0.7, green: 0.3, blue: 0.05))
-        } else if ["united arab emirates", "saudi arabia", "kuwait", "qatar", "lebanon", "jordan", "iraq", "oman"].contains(country) {
-            return (Color(red: 0.2, green: 0.7, blue: 0.9), Color(red: 0.05, green: 0.45, blue: 0.7))
-        } else if ["united kingdom", "france", "germany", "italy", "spain", "netherlands", "austria", "turkey", "russia"].contains(country) {
-            return (Color(red: 0.5, green: 0.3, blue: 0.95), Color(red: 0.3, green: 0.1, blue: 0.75))
-        } else if ["japan", "china", "south korea", "singapore", "thailand", "india", "pakistan", "bangladesh"].contains(country) {
-            return (Color(red: 0.9, green: 0.25, blue: 0.45), Color(red: 0.65, green: 0.05, blue: 0.25))
-        } else if ["united states", "canada", "mexico", "brazil", "argentina"].contains(country) {
-            return (Color(red: 0.1, green: 0.75, blue: 0.55), Color(red: 0.02, green: 0.5, blue: 0.35))
-        } else {
-            return (Color(red: 0.3, green: 0.6, blue: 0.95), Color(red: 0.1, green: 0.35, blue: 0.7))
-        }
-    }
-
     private var flagEmoji: String {
         let country = city.country.lowercased()
         let flags: [String: String] = [
@@ -387,20 +370,15 @@ struct SuggestionCityCard: View {
     }
 
     var body: some View {
-        let colors = regionColor
         ZStack(alignment: .bottomLeading) {
             RoundedRectangle(cornerRadius: 16)
-                .fill(
-                    LinearGradient(
-                        colors: [colors.0.opacity(0.55), colors.1.opacity(0.75)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(.white.opacity(0.2), lineWidth: 1)
-                )
+                .fill(.ultraThinMaterial)
+
+            RoundedRectangle(cornerRadius: 16)
+                .fill(.white.opacity(0.10))
+
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(.white.opacity(0.30), lineWidth: 1)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(flagEmoji)
@@ -424,6 +402,6 @@ struct SuggestionCityCard: View {
         .scaleEffect(animate ? 1 : 0.85)
         .opacity(animate ? 1 : 0)
         .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(delay), value: animate)
-        .shadow(color: colors.1.opacity(0.4), radius: 8, x: 0, y: 4)
+        .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
     }
 }

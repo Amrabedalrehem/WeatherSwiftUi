@@ -19,9 +19,7 @@ struct WeatherPageView: View {
         return weather.current.is_day == 1   
     }
 
-    private var fontColor: Color {
-        checkIfIsDay() ? .black : .white
-    }
+    private var fontColor: Color { .white }
 
     var body: some View {
         ZStack {

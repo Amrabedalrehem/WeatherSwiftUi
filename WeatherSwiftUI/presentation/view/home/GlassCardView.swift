@@ -24,12 +24,27 @@ struct GlassCardView<Content: View>: View {
     }
     
     var body: some View {
-        content.padding(padding).background {
-                RoundedRectangle(cornerRadius: cornerRadius).fill(.ultraThinMaterial).overlay {
-                        RoundedRectangle(cornerRadius: cornerRadius).stroke(.white.opacity(0.3),
+        content
+            .padding(padding)
+            .background {
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .fill(.white.opacity(0.13))
+                    .background {
+                        RoundedRectangle(cornerRadius: cornerRadius)
+                            .fill(.ultraThinMaterial)
+                    }
+                    .overlay {
+                        RoundedRectangle(cornerRadius: cornerRadius)
+                            .stroke(
+                                LinearGradient(
+                                    colors: [.white.opacity(0.55), .white.opacity(0.15)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
                                 lineWidth: 1
                             )
                     }
+                    .shadow(color: .black.opacity(0.12), radius: 12, x: 0, y: 6)
             }
     }
 }
