@@ -25,17 +25,16 @@ struct WeatherCastApp: App {
                 let context = sharedContainer.mainContext
             
             let weatherService = WeatherService()
-            let weatherRepo = WeatherRepository(service: weatherService)
-            let savedLocationRepo = SavedLocationRepository(modelContext: context)
+            let appRepo = AppRepository(service: weatherService, modelContext: context)
             
             _viewModel = StateObject(wrappedValue: WeatherViewModel(
-                fetchWeatherUseCase: FetchWeatherUseCase(repository: weatherRepo),
-                searchCityUseCase: SearchCityUseCase(repository: weatherRepo),
-                saveLocationUseCase: SaveLocationUseCase(repository: savedLocationRepo),
-                deleteLocationUseCase: DeleteLocationUseCase(repository: savedLocationRepo),
-                fetchLocationsUseCase: FetchLocationsUseCase(repository: savedLocationRepo),
-                toggleLocationUseCase: ToggleLocationUseCase(repository: savedLocationRepo),
-                isLocationSavedUseCase: IsLocationSavedUseCase(repository: savedLocationRepo)
+                fetchWeatherUseCase: FetchWeatherUseCase(repository: appRepo),
+                searchCityUseCase: SearchCityUseCase(repository: appRepo),
+                saveLocationUseCase: SaveLocationUseCase(repository: appRepo),
+                deleteLocationUseCase: DeleteLocationUseCase(repository: appRepo),
+                fetchLocationsUseCase: FetchLocationsUseCase(repository: appRepo),
+                toggleLocationUseCase: ToggleLocationUseCase(repository: appRepo),
+                isLocationSavedUseCase: IsLocationSavedUseCase(repository: appRepo)
             ))
             
         } catch {

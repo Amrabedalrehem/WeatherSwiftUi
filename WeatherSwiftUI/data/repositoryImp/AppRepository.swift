@@ -1,22 +1,31 @@
 //
-//  SavedLocationRepository.swift
+//  AppRepository.swift
 //  WeatherSwiftUI
 //
-//  Created by JETSMobileLabMini2 on 01/06/2026.
+//  Created by JETSMobileLabMini2 on 03/06/2026.
 //
 
 import Foundation
 import SwiftData
 
-class SavedLocationRepository: SavedLocationRepositoryProtocol {
+class AppRepository: AppRepositoryProtocol {
     
+    private let service: WeatherService
     private let modelContext: ModelContext
     
-    init(modelContext: ModelContext) {
+    init(service: WeatherService, modelContext: ModelContext) {
+        self.service = service
         self.modelContext = modelContext
     }
     
-    func saveLocation(_ location: SavedLocation) throws {
+      func fetchWeather(lat: Double, lon: Double) async throws -> WeatherResponse {
+        return try await service.fetchWeather(lat: lat, lon: lon)
+    }
+    
+    func searchCity(query: String) async throws -> WeatherResponse {
+        return try await service.searchCity(query: query)
+    }
+      func saveLocation(_ location: SavedLocation) throws {
         modelContext.insert(location)
         try modelContext.save()
     }
@@ -32,13 +41,13 @@ class SavedLocationRepository: SavedLocationRepositoryProtocol {
     }
     
     func isLocationSaved(name: String) throws -> Bool {
-          let descriptor = FetchDescriptor<SavedLocation>()
+        let descriptor = FetchDescriptor<SavedLocation>()
         let results = try modelContext.fetch(descriptor)
         return results.contains { $0.name == name }
     }
 
     func toggleLocation(_ location: SavedLocation) throws {
-          let descriptor = FetchDescriptor<SavedLocation>()
+        let descriptor = FetchDescriptor<SavedLocation>()
         let results = try modelContext.fetch(descriptor)
         
         if let existing = results.first(where: { $0.name == location.name }) {

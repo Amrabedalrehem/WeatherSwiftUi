@@ -10,9 +10,9 @@ import Foundation
 
  class SearchCityUseCase {
     
-    private let repository: WeatherRepositoryProtocol
+    private let repository: AppRepositoryProtocol
     
-    init(repository: WeatherRepositoryProtocol) {
+    init(repository: AppRepositoryProtocol) {
         self.repository = repository
     }
     
