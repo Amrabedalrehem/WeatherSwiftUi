@@ -37,17 +37,18 @@ struct HourlyView: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-             VideoBackgroundView(
+              VideoBackgroundView(
                 condition: forecastDay.hour.first?.condition.text ?? "",
                 isDay: true
             )
             .ignoresSafeArea()
 
-               Color.black.opacity(0.25)
+            Color.black.opacity(0.25)
                 .ignoresSafeArea()
-           VStack(spacing: 0) {
-      HStack {
-                    Button(action: { dismiss() }) {
+
+             VStack(spacing: 0) {
+                HStack {
+                       Button(action: { dismiss() }) {
                         HStack(spacing: 6) {
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 17, weight: .semibold))
@@ -55,26 +56,27 @@ struct HourlyView: View {
                                 .font(.system(size: 17))
                         }
                         .foregroundColor(.white)
-                        .padding(10)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
                         .background(.ultraThinMaterial, in: Capsule())
                     }
+                    .frame(width: 90, alignment: .leading)
 
                     Spacer()
 
-                    Text(dayLabel)
+                      Text(dayLabel)
                         .font(.system(size: 20, weight: .bold))
                         .foregroundColor(.white)
 
                     Spacer()
-
-                    Color.clear
-                        .frame(width: 80, height: 36)
+             Color.clear
+                        .frame(width: 90, height: 36)
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 60)
-                .padding(.bottom, 16)
+                .padding(.top, 16)
+                .padding(.bottom, 20)
 
-                 ScrollView(showsIndicators: false) {
+                ScrollView(showsIndicators: false) {
                     VStack(spacing: 12) {
                         ForEach(hoursFromNow, id: \.time) { hour in
                             GlassCardView {
@@ -92,6 +94,7 @@ struct HourlyView: View {
         }
         .navigationBarHidden(true)
     }
+
 
     private var dayLabel: String {
         let formatter = DateFormatter()
