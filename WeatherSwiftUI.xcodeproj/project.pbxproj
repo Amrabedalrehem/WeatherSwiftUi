@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		68CA2C2D2FCDAACD00A7B92B /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 68CA2C2C2FCDAACD00A7B92B /* Lottie */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		68CA2B332FCD818C00A7B92B /* WeatherSwiftUI.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WeatherSwiftUI.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				68CA2C2D2FCDAACD00A7B92B /* Lottie in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +70,7 @@
 			);
 			name = WeatherSwiftUI;
 			packageProductDependencies = (
+				68CA2C2C2FCDAACD00A7B92B /* Lottie */,
 			);
 			productName = WeatherSwiftUI;
 			productReference = 68CA2B332FCD818C00A7B92B /* WeatherSwiftUI.app */;
@@ -94,6 +100,9 @@
 			);
 			mainGroup = 68CA2B2A2FCD818C00A7B92B;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				68CA2C2B2FCDAACD00A7B92B /* XCRemoteSwiftPackageReference "lottie-spm" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 68CA2B342FCD818C00A7B92B /* Products */;
 			projectDirPath = "";
@@ -322,6 +331,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		68CA2C2B2FCDAACD00A7B92B /* XCRemoteSwiftPackageReference "lottie-spm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/airbnb/lottie-spm.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.6.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		68CA2C2C2FCDAACD00A7B92B /* Lottie */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 68CA2C2B2FCDAACD00A7B92B /* XCRemoteSwiftPackageReference "lottie-spm" */;
+			productName = Lottie;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 68CA2B2B2FCD818C00A7B92B /* Project object */;
 }

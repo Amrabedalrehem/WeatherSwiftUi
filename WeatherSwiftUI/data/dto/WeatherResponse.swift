@@ -9,14 +9,14 @@
 import Foundation
 
 
-struct WeatherResponse: Codable {
+struct WeatherResponse: Codable, Hashable, Equatable {
     let location: Location
     let current: Current
     let forecast: Forecast
 }
 
 
-struct Location: Codable {
+struct Location: Codable, Hashable, Equatable {
     let name: String
     let lat: Double
     let lon: Double
@@ -25,39 +25,49 @@ struct Location: Codable {
  
 
 
-struct Current: Codable {
+struct Current: Codable, Hashable, Equatable {
     let temp_c: Double
     let feelslike_c: Double
     let humidity: Int
     let pressure_mb: Double
     let vis_km: Double
     let condition: Condition
+    let is_day: Int  
 }
 
-struct Condition: Codable {
+struct Condition: Codable, Hashable, Equatable {
     let text: String
     let icon: String
 }
 
 
-struct Forecast: Codable {
+struct Forecast: Codable, Hashable, Equatable {
     let forecastday: [ForecastDay]
 }
 
-struct ForecastDay: Codable {
+struct ForecastDay: Codable, Identifiable, Hashable {
+    var id: String { date }
     let date: String
     let day: Day
     let hour: [Hour]
+
+    static func == (lhs: ForecastDay, rhs: ForecastDay) -> Bool {
+        lhs.date == rhs.date
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(date)
+    }
 }
 
 
-struct Day: Codable {
+struct Day: Codable, Hashable, Equatable {
     let maxtemp_c: Double
     let mintemp_c: Double
     let condition: Condition
 }
 
-struct Hour: Codable {
+struct Hour: Codable, Hashable, Equatable {
     let time: String
     let temp_c: Double
     let condition: Condition

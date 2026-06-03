@@ -8,9 +8,9 @@
 
 class DeleteLocationUseCase {
     
-    private let repository: SavedLocationRepositoryProtocol
+    private let repository: AppRepositoryProtocol
     
-    init(repository: SavedLocationRepositoryProtocol) {
+    init(repository: AppRepositoryProtocol) {
         self.repository = repository
     }
     
