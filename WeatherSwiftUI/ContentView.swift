@@ -1,146 +1,65 @@
 import SwiftUI
 
 struct ContentView: View {
-    
+
     @EnvironmentObject var viewModel: WeatherViewModel
     @EnvironmentObject var locationManager: LocationManager
-    
-    private func checkIfIsDay() -> Bool {
-        guard let weather = viewModel.weatherResponse else { return true }
-        let iconURLString = weather.current.condition.icon.lowercased()
-        return !iconURLString.contains("night")
-    }
-    
-    private var dynamicFontColor: Color {
-        if viewModel.weatherResponse != nil {
-            return checkIfIsDay() ? .black : .white
+
+    @State private var navigateToSearch: Bool = false
+    @State private var searchBarPressed: Bool = false
+    @State private var selectedDay: ForecastDay? = nil
+    @State private var currentPage: Int = 0
+
+      private var allWeatherPages: [WeatherResponse] {
+        var pages: [WeatherResponse] = []
+        if let current = viewModel.weatherResponse {
+            pages.append(current)
         }
-        return .white
+        pages.append(contentsOf: viewModel.savedWeatherResponses)
+        return pages
     }
-    
+
+      private var totalPages: Int {
+        allWeatherPages.count
+    }
+
     var body: some View {
-        NavigationView {
-            ZStack {
-                if let weather = viewModel.weatherResponse {
-                    VideoBackgroundView(
-                        condition: weather.current.condition.text,
-                        isDay: checkIfIsDay()
-                    )
-                    .ignoresSafeArea()
-                } else {
-                    Color(red: 0.1, green: 0.25, blue: 0.45)
-                        .ignoresSafeArea()
-                }
-                
-                VStack(spacing: 0) {
-                    if let weather = viewModel.weatherResponse {
-                   ScrollView(.vertical, showsIndicators: false) {
-                            VStack(spacing: 20) {
-                                if viewModel.isLoading {
-                                    ProgressView()
-                                        .tint(dynamicFontColor)
-                                        .padding(.top, 10)
-                                }
-                                
-                                VStack(spacing: 8) {
-                                    HStack {
-                                        Text(weather.location.name)
-                                            .font(.system(size: 34, weight: .medium))
-                                            .foregroundColor(dynamicFontColor)
-                                        
-                                        Button(action: {
-                                            viewModel.toggleCurrentLocation()
-                                        }) {
-                                            Image(systemName: viewModel.isCurrentLocationSaved ? "star.fill" : "star")
-                                                .foregroundColor(viewModel.isCurrentLocationSaved ? .yellow : dynamicFontColor)
-                                                .font(.title2)
-                                        }
-                                    }
-                                    
-                                    Text("\(Int(weather.current.temp_c))°")
-                                        .font(.system(size: 80, weight: .thin))
-                                        .foregroundColor(dynamicFontColor)
-                                    
-                                    Text(weather.current.condition.text)
-                                        .font(.system(size: 20, weight: .medium))
-                                        .foregroundColor(dynamicFontColor.opacity(0.8))
-                                    
-                                    Text("H:\(Int(weather.forecast.forecastday.first?.day.maxtemp_c ?? 0))°  L:\(Int(weather.forecast.forecastday.first?.day.mintemp_c ?? 0))°")
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(dynamicFontColor.opacity(0.8))
-                                }
-                                .padding(.top, viewModel.isLoading ? 10 : 40)
-                                
-                                if let firstDay = weather.forecast.forecastday.first {
-                                    GlassCardView {
-                                        VStack(alignment: .leading, spacing: 12) {
-                                            Text("HOURLY FORECAST")
-                                                .font(.system(size: 12, weight: .semibold))
-                                                .foregroundColor(dynamicFontColor.opacity(0.6))
-                                            
-                                            Divider().background(dynamicFontColor.opacity(0.3))
-                                            
-                                            ScrollView(.horizontal, showsIndicators: false) {
-                                                HStack(spacing: 20) {
-                                                    ForEach(firstDay.hour.prefix(6), id: \.time) { hour in
-                                                        VStack(spacing: 8) {
-                                                            Text(formatToHour(hour.time))
-                                                                .font(.system(size: 14, weight: .medium))
-                                                                .foregroundColor(dynamicFontColor)
-                                                            
-                                                            AsyncImage(url: URL(string: "https:\(hour.condition.icon)")) { image in
-                                                                image.resizable().scaledToFit()
-                                                            } placeholder: {
-                                                                ProgressView()
-                                                            }
-                                                            .frame(width: 30, height: 30)
-                                                            
-                                                            Text("\(Int(hour.temp_c))°")
-                                                                .font(.system(size: 16, weight: .semibold))
-                                                                .foregroundColor(dynamicFontColor)
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                
-                                GlassCardView {
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        Label("3-DAY FORECAST", systemImage: "calendar")
-                                            .font(.system(size: 12, weight: .semibold))
-                                            .foregroundColor(dynamicFontColor.opacity(0.6))
-                                        
-                                        Divider().background(dynamicFontColor.opacity(0.3))
-                                        
-                                        ForEach(weather.forecast.forecastday, id: \.date) { day in
-                                            NavigationLink(destination: HourlyView(forecastDay: day, fontColor: dynamicFontColor)) {
-                                                ForecastRowView(forecastDay: day, fontColor: dynamicFontColor)
-                                            }
-                                            .buttonStyle(PlainButtonStyle())
-                                            
-                                            if day.date != weather.forecast.forecastday.last?.date {
-                                                Divider().background(dynamicFontColor.opacity(0.2))
-                                            }
-                                        }
-                                    }
-                                }
-                                
-                                WeatherDetailGridView(current: weather.current, fontColor: dynamicFontColor)
-                                
-                            }
-                            .padding(.horizontal, 20)
-                            .padding(.bottom, 20)
+        NavigationStack {
+            ZStack(alignment: .bottom) {
+    if !allWeatherPages.isEmpty {
+                      TabView(selection: $currentPage) {
+                        ForEach(Array(allWeatherPages.enumerated()), id: \.offset) { index, weather in
+                            WeatherPageView(
+                                weather: weather,
+                                isCurrentLocation: index == 0 && viewModel.weatherResponse != nil,
+                                selectedDay: $selectedDay
+                            )
+                            .tag(index)
                         }
-                        
-                    } else if viewModel.isLoading {
+                    }
+                    .tabViewStyle(.page(indexDisplayMode: .never))
+                    .ignoresSafeArea()
+                    .onChange(of: viewModel.savedWeatherResponses.count) { _, _ in
+                        let maxPage = allWeatherPages.count - 1
+                        if currentPage > maxPage {
+                            withAnimation { currentPage = max(0, maxPage) }
+                        }
+                    }
+
+                } else if viewModel.isLoading {
+                    ZStack {
+                        Color(red: 0.1, green: 0.25, blue: 0.45)
+                            .ignoresSafeArea()
                         ProgressView("Loading Weather...")
                             .tint(.white)
                             .foregroundColor(.white)
                             .font(.headline)
-                        
-                    } else if let error = viewModel.errorMessage {
+                    }
+
+                } else if let error = viewModel.errorMessage {
+                    ZStack {
+                        Color(red: 0.1, green: 0.25, blue: 0.45)
+                            .ignoresSafeArea()
                         VStack(spacing: 16) {
                             Image(systemName: "exclamationmark.triangle.fill")
                                 .font(.system(size: 50))
@@ -151,35 +70,130 @@ struct ContentView: View {
                         }
                         .padding()
                     }
+                } else {
+                    Color(red: 0.1, green: 0.25, blue: 0.45)
+                        .ignoresSafeArea()
                 }
-            }
+
+                  VStack(spacing: 12) {
+             if totalPages > 1 {
+                        HStack(spacing: 8) {
+                            ForEach(0..<totalPages, id: \.self) { index in
+                                if index == 0 {
+                                      Image(systemName: "location.fill")
+                                        .font(.system(size: 8))
+                                        .foregroundColor(currentPage == 0 ? .white : .white.opacity(0.4))
+                                        .scaleEffect(currentPage == 0 ? 1.3 : 1.0)
+                                        .animation(.spring(response: 0.3), value: currentPage)
+                                } else {
+                                    Circle()
+                                        .fill(currentPage == index ? .white : .white.opacity(0.35))
+                                        .frame(width: currentPage == index ? 8 : 6, height: currentPage == index ? 8 : 6)
+                                        .animation(.spring(response: 0.3), value: currentPage)
+                                }
+                            }
+                        }
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 16)
+                        .background(.ultraThinMaterial, in: Capsule())
+                    }
+
+                      floatingSearchBar
+
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 30)
+
+            }   .ignoresSafeArea()
             .navigationBarHidden(true)
+            .toolbarBackground(.hidden, for: .navigationBar)
+            .preferredColorScheme(.dark)
+            .navigationDestination(isPresented: $navigateToSearch) {
+                SearchView().environmentObject(viewModel)
+            }
+            .navigationDestination(item: $selectedDay) { day in
+                HourlyView(forecastDay: day, fontColor: .white)
+            }
             .onAppear {
-                Task {
-                    await viewModel.fetchDefaultWeather()
+                if locationManager.authorizationStatus == .denied || locationManager.authorizationStatus == .restricted {
+                    if viewModel.weatherResponse == nil {
+                        Task { await viewModel.fetchDefaultWeather() }
+                    }
+                } else if locationManager.authorizationStatus == .notDetermined {
+                        }
+                Task { await viewModel.fetchAllSavedWeather() }
+            }
+            .onChange(of: locationManager.authorizationStatus) { _, status in
+                if status == .denied || status == .restricted {
+                    if viewModel.weatherResponse == nil {
+                        Task { await viewModel.fetchDefaultWeather() }
+                    }
                 }
             }
             .onChange(of: locationManager.currentLocation) { _, newLocation in
                 guard let location = newLocation else { return }
-                if viewModel.weatherResponse == nil {
-                    Task {
-                        await viewModel.fetchWeather(
-                            lat: location.coordinate.latitude,
-                            lon: location.coordinate.longitude
-                        )
-                    }
+                Task {
+                    await viewModel.fetchWeather(
+                        lat: location.coordinate.latitude,
+                        lon: location.coordinate.longitude
+                    )
+                }
+            }
+            .onChange(of: navigateToSearch) { _, isShowing in
+                if !isShowing {
+                    Task { await viewModel.fetchAllSavedWeather() }
                 }
             }
         }
     }
-    
-    private func formatToHour(_ timeString: String) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd HH:mm"
-        guard let date = formatter.date(from: timeString) else { return timeString }
-        
-        let outputFormatter = DateFormatter()
-        outputFormatter.dateFormat = "h a"
-        return outputFormatter.string(from: date)
+
+       private var floatingSearchBar: some View {
+        Button(action: {
+            withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
+                searchBarPressed = true
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
+                    searchBarPressed = false
+                }
+                navigateToSearch = true
+            }
+        }) {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(.white.opacity(0.18))
+                        .frame(width: 38, height: 38)
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.white)
+                }
+
+                Text("Search city or location...")
+                    .font(.system(size: 16, weight: .regular))
+                    .foregroundColor(.white.opacity(0.55))
+
+                Spacer()
+
+                ZStack {
+                    Circle()
+                        .fill(.white.opacity(0.12))
+                        .frame(width: 38, height: 38)
+                    Image(systemName: "location.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(.cyan.opacity(0.9))
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 9)
+            .background(.ultraThinMaterial, in: Capsule())
+            .overlay(
+                Capsule()
+                    .stroke(.white.opacity(0.22), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
+            .scaleEffect(searchBarPressed ? 0.96 : 1.0)
+        }
+        .buttonStyle(.plain)
     }
 }

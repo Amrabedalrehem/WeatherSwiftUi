@@ -48,7 +48,8 @@ struct WeatherCastApp: App {
             ContentView()
                 .environmentObject(viewModel)
                 .environmentObject(locationManager)
-                    .modelContainer(container)
+                .modelContainer(container)
+                .preferredColorScheme(.dark)
                 .onAppear {
                     locationManager.requestPermission()
                 }

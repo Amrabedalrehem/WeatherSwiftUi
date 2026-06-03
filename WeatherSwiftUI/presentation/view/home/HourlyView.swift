@@ -5,24 +5,26 @@
 //  Created by JETSMobileLabMini2 on 01/06/2026.
 //
 
-
 import SwiftUI
 
 struct HourlyView: View {
-    
+
     let forecastDay: ForecastDay
     let fontColor: Color
-        private var hoursFromNow: [Hour] {
+
+    @Environment(\.dismiss) private var dismiss
+
+    private var hoursFromNow: [Hour] {
         let currentHour = Calendar.current.component(.hour, from: Date())
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm"
-        
+
         let dayFormatter = DateFormatter()
         dayFormatter.dateFormat = "yyyy-MM-dd"
         guard let date = dayFormatter.date(from: forecastDay.date) else {
             return forecastDay.hour
         }
-        
+
         if Calendar.current.isDateInToday(date) {
             return forecastDay.hour.filter { hour in
                 guard let hourDate = formatter.date(from: hour.time) else { return false }
@@ -32,45 +34,65 @@ struct HourlyView: View {
         }
         return forecastDay.hour
     }
-    
+
     var body: some View {
-        ZStack {
-                 VideoBackgroundView(
+        ZStack(alignment: .top) {
+             VideoBackgroundView(
                 condition: forecastDay.hour.first?.condition.text ?? "",
                 isDay: true
             )
-            
-                  VStack(spacing: 0) {
-                              HStack {
-                    Text(dayLabel)
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(fontColor)
+            .ignoresSafeArea()
+
+               Color.black.opacity(0.25)
+                .ignoresSafeArea()
+           VStack(spacing: 0) {
+      HStack {
+                    Button(action: { dismiss() }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 17, weight: .semibold))
+                            Text("Back")
+                                .font(.system(size: 17))
+                        }
+                        .foregroundColor(.white)
+                        .padding(10)
+                        .background(.ultraThinMaterial, in: Capsule())
+                    }
+
                     Spacer()
+
+                    Text(dayLabel)
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.white)
+
+                    Spacer()
+
+                    Color.clear
+                        .frame(width: 80, height: 36)
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 60)
-                .padding(.bottom, 20)
-               
-                ScrollView {
+                .padding(.bottom, 16)
+
+                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 12) {
                         ForEach(hoursFromNow, id: \.time) { hour in
                             GlassCardView {
                                 HourRowView(
                                     hour: hour,
-                                    fontColor: fontColor
+                                    fontColor: .white
                                 )
                             }
                         }
                     }
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 30)
+                    .padding(.bottom, 40)
                 }
             }
         }
-        .ignoresSafeArea()
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarHidden(true)
     }
- 
+
     private var dayLabel: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
@@ -88,4 +110,3 @@ struct HourlyView: View {
         }
     }
 }
- 
