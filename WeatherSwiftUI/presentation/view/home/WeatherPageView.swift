@@ -14,18 +14,46 @@ struct WeatherPageView: View {
     @Binding var selectedDay: ForecastDay?
     @EnvironmentObject var viewModel: WeatherViewModel
     @State private var showRemoveAlert: Bool = false
-
+    @State private var headerVisible: Bool = false
+    @State private var card1Visible:  Bool = false
+    @State private var card2Visible:  Bool = false
+    @State private var card3Visible:  Bool = false
+    @State private var tempVisible:   Bool = false
     private func checkIfIsDay() -> Bool {
-        return weather.current.is_day == 1   
+        return weather.current.is_day == 1
     }
 
     private var fontColor: Color {
         checkIfIsDay() ? .black : .white
     }
 
+    private func triggerEntrance() {
+        headerVisible = false
+        card1Visible  = false
+        card2Visible  = false
+        card3Visible  = false
+        tempVisible   = false
+
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.78).delay(0.05)) {
+            headerVisible = true
+        }
+          withAnimation(.spring(response: 0.6, dampingFraction: 0.55).delay(0.12)) {
+            tempVisible = true
+        }
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.78).delay(0.25)) {
+            card1Visible = true
+        }
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.78).delay(0.35)) {
+            card2Visible = true
+        }
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.78).delay(0.45)) {
+            card3Visible = true
+        }
+    }
+
     var body: some View {
         ZStack {
-             VideoBackgroundView(
+            VideoBackgroundView(
                 condition: weather.current.condition.text,
                 isDay: checkIfIsDay()
             )
@@ -34,7 +62,7 @@ struct WeatherPageView: View {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: 20) {
 
-                     VStack(spacing: 8) {
+                          VStack(spacing: 8) {
                         HStack(spacing: 10) {
                             Spacer()
 
@@ -51,9 +79,9 @@ struct WeatherPageView: View {
                             if !isCurrentLocation {
                                 Button(action: {
                                     if viewModel.isLocationSaved(name: weather.location.name) {
-                                          showRemoveAlert = true
+                                        showRemoveAlert = true
                                     } else {
-                                          let location = SavedLocation(
+                                        let location = SavedLocation(
                                             name: weather.location.name,
                                             lat: weather.location.lat,
                                             lon: weather.location.lon,
@@ -86,9 +114,15 @@ struct WeatherPageView: View {
                         }
                         .padding(.top, 50)
 
-                        Text("\(Int(weather.current.temp_c))°")
+                          Text("\(Int(weather.current.temp_c))°")
                             .font(.system(size: 80, weight: .thin))
                             .foregroundColor(fontColor)
+                            .rotation3DEffect(
+                                .degrees(tempVisible ? 0 : -90),
+                                axis: (x: 1, y: 0, z: 0),
+                                perspective: 0.6
+                            )
+                            .opacity(tempVisible ? 1 : 0)
 
                         HStack(spacing: 8) {
                             AsyncImage(url: URL(string: "https:\(weather.current.condition.icon)")) { image in
@@ -107,7 +141,10 @@ struct WeatherPageView: View {
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(fontColor.opacity(0.8))
                     }
-                        if let firstDay = weather.forecast.forecastday.first {
+                    .opacity(headerVisible ? 1 : 0)
+                    .offset(y: headerVisible ? 0 : -30)
+
+                       if let firstDay = weather.forecast.forecastday.first {
                         GlassCardView {
                             VStack(alignment: .leading, spacing: 12) {
                                 Text("HOURLY FORECAST")
@@ -140,8 +177,11 @@ struct WeatherPageView: View {
                                 }
                             }
                         }
+                        .opacity(card1Visible ? 1 : 0)
+                        .offset(y: card1Visible ? 0 : 40)
                     }
-                        GlassCardView {
+
+                       GlassCardView {
                         VStack(alignment: .leading, spacing: 8) {
                             Label("3-DAY FORECAST", systemImage: "calendar")
                                 .font(.system(size: 12, weight: .semibold))
@@ -163,12 +203,23 @@ struct WeatherPageView: View {
                             }
                         }
                     }
-
-                    WeatherDetailGridView(current: weather.current, fontColor: fontColor)
+                    .opacity(card2Visible ? 1 : 0)
+                    .offset(y: card2Visible ? 0 : 40)
+            WeatherDetailGridView(current: weather.current, fontColor: fontColor)
+                        .opacity(card3Visible ? 1 : 0)
+                        .offset(y: card3Visible ? 0 : 40)
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 110)
             }
+        }
+        .onAppear { triggerEntrance() }
+        .onDisappear {
+            headerVisible = false
+            card1Visible  = false
+            card2Visible  = false
+            card3Visible  = false
+            tempVisible   = false
         }
     }
 
