@@ -25,8 +25,10 @@ struct SearchView: View {
 
     private func checkIfIsDay() -> Bool {
         guard let weather = viewModel.weatherResponse else { return true }
-        return !weather.current.condition.icon.lowercased().contains("night")
+        return weather.current.is_day == 1
     }
+
+    private var fontColor: Color { checkIfIsDay() ? .black : .white }
 
        private var filteredSuggestions: [SavedLocation] {
         if searchText.isEmpty {
@@ -59,7 +61,7 @@ struct SearchView: View {
                 .ignoresSafeArea()
             }
 
-              Color.black.opacity(0.35)
+            Color.black.opacity(checkIfIsDay() ? 0.15 : 0.35)
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
@@ -71,7 +73,7 @@ struct SearchView: View {
                             Text("Home")
                                 .font(.system(size: 16, weight: .medium))
                         }
-                        .foregroundColor(.white)
+                        .foregroundColor(fontColor)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 8)
                         .background(.ultraThinMaterial, in: Capsule())
@@ -81,7 +83,7 @@ struct SearchView: View {
 
                     Text("Search")
                         .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.white)
+                        .foregroundColor(fontColor)
 
                     Spacer()
 
@@ -184,20 +186,20 @@ struct SearchView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 6) {
                         Image(systemName: "mappin.circle.fill")
-                            .foregroundColor(.white.opacity(0.8))
+                            .foregroundColor(fontColor.opacity(0.8))
                             .font(.system(size: 14))
                         Text(weather.location.name)
                             .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(fontColor)
                     }
 
                     Text(weather.location.country)
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.white.opacity(0.65))
+                        .foregroundColor(fontColor.opacity(0.65))
 
                     Text(weather.current.condition.text)
                         .font(.system(size: 13))
-                        .foregroundColor(.white.opacity(0.65))
+                        .foregroundColor(fontColor.opacity(0.65))
                         .lineLimit(1)
                 }
 
@@ -206,7 +208,7 @@ struct SearchView: View {
                 VStack(alignment: .trailing, spacing: 8) {
                     Text("\(Int(weather.current.temp_c))°")
                         .font(.system(size: 40, weight: .thin))
-                        .foregroundColor(.white)
+                        .foregroundColor(fontColor)
 
                     Button {
                         let location = SavedLocation(
@@ -237,12 +239,12 @@ struct SearchView: View {
                     .font(.system(size: 11))
                 Text("SAVED LOCATIONS")
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.75))
+                .foregroundColor(fontColor.opacity(0.75))
             }
 
             VStack(spacing: 10) {
                 ForEach(viewModel.savedLocations, id: \.name) { location in
-                    SavedLocationRowView(location: location)
+                    SavedLocationRowView(location: location, fontColor: fontColor)
                         .onTapGesture {
                             Task {
                                 do {
@@ -264,23 +266,23 @@ struct SearchView: View {
                     .font(.system(size: 12))
                 Text(searchText.isEmpty ? "SUGGESTED CITIES" : "RESULTS")
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.75))
+                    .foregroundColor(fontColor.opacity(0.75))
 
                 Spacer()
 
                 Text("\(filteredSuggestions.count) cities")
                     .font(.system(size: 11))
-                    .foregroundColor(.white.opacity(0.45))
+                    .foregroundColor(fontColor.opacity(0.45))
             }
 
             if filteredSuggestions.isEmpty {
                 VStack(spacing: 10) {
                     Image(systemName: "magnifyingglass")
                         .font(.system(size: 32))
-                        .foregroundColor(.white.opacity(0.3))
+                        .foregroundColor(fontColor.opacity(0.3))
                     Text("No cities found")
                         .font(.system(size: 15))
-                        .foregroundColor(.white.opacity(0.45))
+                        .foregroundColor(fontColor.opacity(0.45))
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 30)
@@ -296,7 +298,8 @@ struct SearchView: View {
                         SuggestionCityCard(
                             city: city,
                             delay: Double(index) * 0.04,
-                            animate: animateSuggestions
+                            animate: animateSuggestions,
+                            fontColor: fontColor
                         )
                         .onTapGesture {
                             Task {
@@ -347,6 +350,7 @@ struct SuggestionCityCard: View {
     let city: SavedLocation
     let delay: Double
     let animate: Bool
+    var fontColor: Color = .white
 
     private var flagEmoji: String {
         let country = city.country.lowercased()
@@ -388,12 +392,12 @@ struct SuggestionCityCard: View {
 
                 Text(city.name)
                     .font(.system(size: 15, weight: .bold))
-                    .foregroundColor(.white)
+                    .foregroundColor(fontColor)
                     .lineLimit(1)
 
                 Text(city.country)
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.white.opacity(0.7))
+                    .foregroundColor(fontColor.opacity(0.7))
                     .lineLimit(1)
             }
             .padding(14)

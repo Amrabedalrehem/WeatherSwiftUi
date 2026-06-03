@@ -10,7 +10,9 @@ import SwiftUI
 struct HourlyView: View {
 
     let forecastDay: ForecastDay
-    let fontColor: Color
+    let isDay: Bool
+
+    private var fontColor: Color { isDay ? .black : .white }
 
     @Environment(\.dismiss) private var dismiss
 
@@ -39,7 +41,7 @@ struct HourlyView: View {
         ZStack(alignment: .top) {
               VideoBackgroundView(
                 condition: forecastDay.hour.first?.condition.text ?? "",
-                isDay: true
+                isDay: isDay
             )
             .ignoresSafeArea()
 
@@ -55,7 +57,7 @@ struct HourlyView: View {
                             Text("Back")
                                 .font(.system(size: 17))
                         }
-                        .foregroundColor(.white)
+                        .foregroundColor(fontColor)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 8)
                         .background(.ultraThinMaterial, in: Capsule())
@@ -66,7 +68,7 @@ struct HourlyView: View {
 
                       Text(dayLabel)
                         .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(fontColor)
 
                     Spacer()
              Color.clear
@@ -82,7 +84,7 @@ struct HourlyView: View {
                             GlassCardView {
                                 HourRowView(
                                     hour: hour,
-                                    fontColor: .white
+                                    fontColor: fontColor
                                 )
                             }
                         }

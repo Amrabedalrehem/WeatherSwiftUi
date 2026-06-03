@@ -13,6 +13,8 @@ struct WeatherPreviewView: View {
     @State private var selectedDay: ForecastDay?
 
     var body: some View {
+        let fontColor: Color = weather.current.is_day == 1 ? .black : .white
+
         ZStack(alignment: .topLeading) {
               WeatherPageView(
                 weather: weather,
@@ -27,7 +29,7 @@ struct WeatherPreviewView: View {
                     Text("Search")
                         .font(.system(size: 16, weight: .medium))
                 }
-                .foregroundColor(.white)
+                .foregroundColor(fontColor)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
                 .background(.ultraThinMaterial, in: Capsule())
@@ -38,7 +40,7 @@ struct WeatherPreviewView: View {
         .navigationBarHidden(true)
         .ignoresSafeArea()
             .navigationDestination(item: $selectedDay) { day in
-            HourlyView(forecastDay: day, fontColor: .white)
+            HourlyView(forecastDay: day, isDay: weather.current.is_day == 1)
         }
     }
 }

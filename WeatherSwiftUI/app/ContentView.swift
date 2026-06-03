@@ -117,7 +117,7 @@ struct ContentView: View {
                 SearchView().environmentObject(viewModel)
             }
             .navigationDestination(item: $selectedDay) { day in
-                HourlyView(forecastDay: day, fontColor: .white)
+                HourlyView(forecastDay: day, isDay: currentPage < allWeatherPages.count ? allWeatherPages[currentPage].current.is_day == 1 : true)
             }
              .onAppear {
                 Task {

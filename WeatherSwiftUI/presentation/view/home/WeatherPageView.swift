@@ -19,7 +19,9 @@ struct WeatherPageView: View {
         return weather.current.is_day == 1   
     }
 
-    private var fontColor: Color { .white }
+    private var fontColor: Color {
+        checkIfIsDay() ? .black : .white
+    }
 
     var body: some View {
         ZStack {
@@ -88,9 +90,18 @@ struct WeatherPageView: View {
                             .font(.system(size: 80, weight: .thin))
                             .foregroundColor(fontColor)
 
-                        Text(weather.current.condition.text)
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(fontColor.opacity(0.8))
+                        HStack(spacing: 8) {
+                            AsyncImage(url: URL(string: "https:\(weather.current.condition.icon)")) { image in
+                                image.resizable().scaledToFit()
+                            } placeholder: {
+                                ProgressView()
+                            }
+                            .frame(width: 70, height: 70)
+
+                            Text(weather.current.condition.text)
+                                .font(.system(size: 24, weight: .medium))
+                                .foregroundColor(fontColor.opacity(0.9))
+                        }
 
                         Text("H:\(Int(weather.forecast.forecastday.first?.day.maxtemp_c ?? 0))°  L:\(Int(weather.forecast.forecastday.first?.day.mintemp_c ?? 0))°")
                             .font(.system(size: 16, weight: .medium))
