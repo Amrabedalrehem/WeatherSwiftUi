@@ -14,6 +14,7 @@ struct WeatherCastApp: App {
     
     @StateObject private var locationManager = LocationManager()
     @StateObject private var viewModel: WeatherViewModel
+    @StateObject private var networkMonitor = NetworkMonitor()
     
     init() {
      let schema = Schema([SavedLocation.self])
@@ -47,6 +48,7 @@ struct WeatherCastApp: App {
             RootView()
                 .environmentObject(viewModel)
                 .environmentObject(locationManager)
+                .environmentObject(networkMonitor)
                 .modelContainer(container)
                 .preferredColorScheme(.dark)
                 .onAppear {

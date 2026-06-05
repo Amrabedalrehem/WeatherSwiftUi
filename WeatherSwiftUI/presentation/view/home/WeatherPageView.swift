@@ -77,23 +77,24 @@ struct WeatherPageView: View {
                                 .foregroundColor(fontColor)
 
                             if !isCurrentLocation {
-                                Button(action: {
-                                    if viewModel.isLocationSaved(name: weather.location.name) {
-                                        showRemoveAlert = true
-                                    } else {
-                                        let location = SavedLocation(
-                                            name: weather.location.name,
-                                            lat: weather.location.lat,
-                                            lon: weather.location.lon,
-                                            country: weather.location.country
-                                        )
-                                        viewModel.toggleLocationFromSearch(location: location)
+                                AnimatedStarButton(
+                                    isSaved: viewModel.isLocationSaved(name: weather.location.name),
+                                    fontColor: fontColor,
+                                    size: 22,
+                                    action: {
+                                        if viewModel.isLocationSaved(name: weather.location.name) {
+                                            showRemoveAlert = true
+                                        } else {
+                                            let location = SavedLocation(
+                                                name: weather.location.name,
+                                                lat: weather.location.lat,
+                                                lon: weather.location.lon,
+                                                country: weather.location.country
+                                            )
+                                            viewModel.toggleLocationFromSearch(location: location)
+                                        }
                                     }
-                                }) {
-                                    Image(systemName: viewModel.isLocationSaved(name: weather.location.name) ? "star.fill" : "star")
-                                        .foregroundColor(viewModel.isLocationSaved(name: weather.location.name) ? .yellow : fontColor)
-                                        .font(.system(size: 22))
-                                }
+                                )
                                 .alert("Remove Favorite?", isPresented: $showRemoveAlert) {
                                     Button("Remove", role: .destructive) {
                                         let location = SavedLocation(

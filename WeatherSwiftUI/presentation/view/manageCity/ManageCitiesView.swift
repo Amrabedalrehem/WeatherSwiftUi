@@ -216,6 +216,10 @@ struct ManageCitiesView: View {
                 }
             }
         }
+        .modifier(SwipeToDeleteModifier {
+            locationToRemove = location
+            showRemoveAlert = true
+        })
         .onTapGesture {
             Task {
                 if let w = liveWeather {
@@ -243,4 +247,67 @@ struct ManageCitiesView: View {
         return out.string(from: date)
     }
 }
- 
+struct SwipeToDeleteModifier: ViewModifier {
+    var action: () -> Void
+    @State private var offset: CGFloat = 0
+    @State private var isSwiped: Bool = false
+
+    func body(content: Content) -> some View {
+        ZStack(alignment: .trailing) {
+             ZStack(alignment: .trailing) {
+                RoundedRectangle(cornerRadius: 24)
+                     .fill(Color.red.opacity(0.85))
+                
+                Image(systemName: "trash.fill")
+                    .foregroundColor(.white)
+                    .font(.system(size: 22, weight: .semibold))
+                    .fixedSize()
+                    .padding(.trailing, 24)
+            }
+            .frame(width: max(-offset, 0))
+            .clipped()
+            .onTapGesture {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                    offset = 0
+                    isSwiped = false
+                }
+                action()
+            }
+            
+             content
+                .offset(x: offset)
+                .gesture(
+                    DragGesture()
+                        .onChanged { value in
+                            let translation = value.translation.width
+                            if !isSwiped && translation < 0 {
+                                offset = translation
+                            } else if isSwiped {
+                                offset = min(0, -80 + translation)
+                            }
+                        }
+                        .onEnded { value in
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+                                if offset < -50 {
+                                    offset = -80
+                                    isSwiped = true
+                                } else {
+                                    offset = 0
+                                    isSwiped = false
+                                }
+                            }
+                        }
+                )
+                .simultaneousGesture(
+                    TapGesture().onEnded {
+                        if isSwiped {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                offset = 0
+                                isSwiped = false
+                            }
+                        }
+                    }
+                )
+        }
+    }
+}
