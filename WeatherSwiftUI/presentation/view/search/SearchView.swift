@@ -59,8 +59,7 @@ struct SearchView: View {
 
             VStack(spacing: 0) {
                 
-                // MARK: - Header
-                HStack {
+                    HStack {
                     Button(action: { dismiss() }) {
                         HStack(spacing: 6) {
                             Image(systemName: "chevron.left")
@@ -198,23 +197,21 @@ private func searchResultView(weather: WeatherResponse) -> some View {
                         .font(.system(size: 40, weight: .thin))
                         .foregroundColor(fontColor)
 
-                    Button {
-                        let location = SavedLocation(
-                            name: weather.location.name,
-                            lat: weather.location.lat,
-                            lon: weather.location.lon,
-                            country: weather.location.country
-                        )
-                        viewModel.toggleLocationFromSearch(location: location)
-                        viewModel.fetchSavedLocations()
-                    } label: {
-                        Image(
-                            systemName: isSaved(weather.location.name) ?
-                            "star.fill" : "star"
-                        )
-                        .foregroundColor(.yellow)
-                        .font(.system(size: 20))
-                    }
+                    AnimatedStarButton(
+                        isSaved: isSaved(weather.location.name),
+                        fontColor: fontColor,
+                        size: 20,
+                        action: {
+                            let location = SavedLocation(
+                                name: weather.location.name,
+                                lat: weather.location.lat,
+                                lon: weather.location.lon,
+                                country: weather.location.country
+                            )
+                            viewModel.toggleLocationFromSearch(location: location)
+                            viewModel.fetchSavedLocations()
+                        }
+                    )
                 }
             }
         }
