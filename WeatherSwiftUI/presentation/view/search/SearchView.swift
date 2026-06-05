@@ -1,11 +1,3 @@
-
-//
-//   SearchView.swift
-//   WeatherSwiftUI
-//
-//   Created by JETSMobileLabMini2 on 02/06/2026.
-//
-
 import SwiftUI
 
 struct SearchView: View {
@@ -19,6 +11,7 @@ struct SearchView: View {
     @State private var searchError: String?
     @State private var animateSuggestions: Bool = false
     @State private var selectedPreviewWeather: WeatherResponse? = nil
+    
     private var currentCondition: String {
         viewModel.weatherResponse?.current.condition.text ?? ""
     }
@@ -30,7 +23,7 @@ struct SearchView: View {
 
     private var fontColor: Color { checkIfIsDay() ? .black : .white }
 
-       private var filteredSuggestions: [SavedLocation] {
+    private var filteredSuggestions: [SavedLocation] {
         if searchText.isEmpty {
             return suggestedCities
         } else {
@@ -50,7 +43,7 @@ struct SearchView: View {
                 )
                 .ignoresSafeArea()
             } else {
-                   LinearGradient(
+                LinearGradient(
                     colors: [
                         Color(red: 0.05, green: 0.12, blue: 0.28),
                         Color(red: 0.10, green: 0.22, blue: 0.42)
@@ -65,7 +58,9 @@ struct SearchView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                  HStack {
+                
+                // MARK: - Header
+                HStack {
                     Button(action: { dismiss() }) {
                         HStack(spacing: 6) {
                             Image(systemName: "chevron.left")
@@ -87,18 +82,15 @@ struct SearchView: View {
 
                     Spacer()
 
-                       Color.clear
+                    Color.clear
                         .frame(width: 80, height: 36)
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 60)
                 .padding(.bottom, 12)
-
-                searchBar
+      searchBar
                     .padding(.horizontal, 20)
-                    .padding(.top, 0)
-
-                if isSearching {
+        if isSearching {
                     ProgressView()
                         .tint(.white)
                         .scaleEffect(1.3)
@@ -116,9 +108,8 @@ struct SearchView: View {
                         .transition(.opacity)
                 }
 
-                ScrollView(.vertical, showsIndicators: false) {
+                   ScrollView(.vertical, showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 24) {
-
                         suggestionsSection
                             .padding(.horizontal, 20)
                             .padding(.bottom, 30)
@@ -134,13 +125,13 @@ struct SearchView: View {
             WeatherPreviewView(weather: weather)
         }
         .onAppear {
-            viewModel.fetchSavedLocations()
             withAnimation(.easeOut(duration: 0.6).delay(0.2)) {
                 animateSuggestions = true
             }
         }
     }
-   private var searchBar: some View {
+
+     private var searchBar: some View {
         HStack(spacing: 12) {
             Image(systemName: "magnifyingglass")
                 .foregroundColor(.white.opacity(0.7))
@@ -176,7 +167,8 @@ struct SearchView: View {
                 .stroke(.white.opacity(0.3), lineWidth: 1)
         )
     }
-   private func searchResultView(weather: WeatherResponse) -> some View {
+
+private func searchResultView(weather: WeatherResponse) -> some View {
         GlassCardView {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 6) {
@@ -214,10 +206,14 @@ struct SearchView: View {
                             country: weather.location.country
                         )
                         viewModel.toggleLocationFromSearch(location: location)
+                        viewModel.fetchSavedLocations()
                     } label: {
-                        Image(systemName: isSaved(weather.location.name) ? "star.fill" : "star")
-                            .foregroundColor(.yellow)
-                            .font(.system(size: 20))
+                        Image(
+                            systemName: isSaved(weather.location.name) ?
+                            "star.fill" : "star"
+                        )
+                        .foregroundColor(.yellow)
+                        .font(.system(size: 20))
                     }
                 }
             }
@@ -227,19 +223,16 @@ struct SearchView: View {
         }
     }
 
-
-   private var suggestionsSection: some View {
+    private var suggestionsSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 6) {
                 Image(systemName: "globe.americas.fill")
                     .foregroundColor(.cyan.opacity(0.9))
                     .font(.system(size: 12))
-                Text(searchText.isEmpty ? "SUGGESTED CITIES" : "RESULTS")
+                Text(searchText.isEmpty ? "POPULAR CITIES" : "RESULTS")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(fontColor.opacity(0.75))
-
                 Spacer()
-
                 Text("\(filteredSuggestions.count) cities")
                     .font(.system(size: 11))
                     .foregroundColor(fontColor.opacity(0.45))
@@ -256,16 +249,14 @@ struct SearchView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 30)
+
             } else {
-                LazyVGrid(
-                    columns: [
-                        GridItem(.flexible(), spacing: 12),
-                        GridItem(.flexible(), spacing: 12)
-                    ],
-                    spacing: 12
-                ) {
-                    ForEach(Array(filteredSuggestions.prefix(20).enumerated()), id: \.element.name) { index, city in
-                        SuggestionCityCard(
+                FlowLayout(spacing: 10) {
+                    ForEach(
+                        Array(filteredSuggestions.prefix(30).enumerated()),
+                        id: \.element.name
+                    ) { index, city in
+                        CityChipView(
                             city: city,
                             delay: Double(index) * 0.04,
                             animate: animateSuggestions,
@@ -274,10 +265,11 @@ struct SearchView: View {
                         .onTapGesture {
                             Task {
                                 do {
-                                    let result = try await viewModel.searchCity(query: city.name)
+                                    let result = try await viewModel.searchCity(
+                                        query: city.name
+                                    )
                                     selectedPreviewWeather = result
-                                } catch {
-                                                }
+                                } catch {}
                             }
                         }
                     }
@@ -314,68 +306,5 @@ struct SearchView: View {
 
     private func isSaved(_ name: String) -> Bool {
         viewModel.savedLocations.contains { $0.name == name }
-    }
-}
-struct SuggestionCityCard: View {
-    let city: SavedLocation
-    let delay: Double
-    let animate: Bool
-    var fontColor: Color = .white
-
-    private var flagEmoji: String {
-        let country = city.country.lowercased()
-        let flags: [String: String] = [
-            "egypt": "🇪🇬", "morocco": "🇲🇦", "nigeria": "🇳🇬",
-            "kenya": "🇰🇪", "south africa": "🇿🇦", "tunisia": "🇹🇳",
-            "united arab emirates": "🇦🇪", "saudi arabia": "🇸🇦",
-            "kuwait": "🇰🇼", "qatar": "🇶🇦", "lebanon": "🇱🇧",
-            "jordan": "🇯🇴", "iraq": "🇮🇶", "oman": "🇴🇲",
-            "united kingdom": "🇬🇧", "france": "🇫🇷", "germany": "🇩🇪",
-            "italy": "🇮🇹", "spain": "🇪🇸", "netherlands": "🇳🇱",
-            "austria": "🇦🇹", "turkey": "🇹🇷", "russia": "🇷🇺",
-            "japan": "🇯🇵", "china": "🇨🇳", "south korea": "🇰🇷",
-            "singapore": "🇸🇬", "thailand": "🇹🇭", "india": "🇮🇳",
-            "pakistan": "🇵🇰", "bangladesh": "🇧🇩",
-            "united states": "🇺🇸", "canada": "🇨🇦", "mexico": "🇲🇽",
-            "brazil": "🇧🇷", "argentina": "🇦🇷",
-            "australia": "🇦🇺"
-        ]
-        return flags[country] ?? "🌍"
-    }
-
-    var body: some View {
-        ZStack(alignment: .bottomLeading) {
-            RoundedRectangle(cornerRadius: 16)
-                .fill(.ultraThinMaterial)
-
-            RoundedRectangle(cornerRadius: 16)
-                .fill(.white.opacity(0.10))
-
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(.white.opacity(0.30), lineWidth: 1)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(flagEmoji)
-                    .font(.system(size: 28))
-
-                Spacer()
-
-                Text(city.name)
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundColor(fontColor)
-                    .lineLimit(1)
-
-                Text(city.country)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(fontColor.opacity(0.7))
-                    .lineLimit(1)
-            }
-            .padding(14)
-        }
-        .frame(height: 110)
-        .scaleEffect(animate ? 1 : 0.85)
-        .opacity(animate ? 1 : 0)
-        .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(delay), value: animate)
-        .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
     }
 }
