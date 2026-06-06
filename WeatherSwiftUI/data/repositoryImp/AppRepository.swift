@@ -51,9 +51,15 @@ class AppRepository: AppRepositoryProtocol {
         let results = try modelContext.fetch(descriptor)
         
         if let existing = results.first(where: { $0.name == location.name }) {
-            modelContext.delete(existing)
+             modelContext.delete(existing)
         } else {
-            modelContext.insert(location)
+                let newLocation = SavedLocation(
+                name: location.name,
+                lat: location.lat,
+                lon: location.lon,
+                country: location.country
+            )
+            modelContext.insert(newLocation)
         }
         try modelContext.save()
     }

@@ -8,11 +8,12 @@
 import SwiftUI
 
 struct WeatherPageView: View {
-
+    
     let weather: WeatherResponse
     let isCurrentLocation: Bool
     @Binding var selectedDay: ForecastDay?
-    @EnvironmentObject var viewModel: WeatherViewModel
+    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var searchViewModel: SearchViewModel
     @State private var showRemoveAlert: Bool = false
     @State private var headerVisible: Bool = false
     @State private var card1Visible:  Bool = false
@@ -78,11 +79,11 @@ struct WeatherPageView: View {
 
                             if !isCurrentLocation {
                                 AnimatedStarButton(
-                                    isSaved: viewModel.isLocationSaved(name: weather.location.name),
+                                    isSaved: appState.savedLocations.contains { $0.name == weather.location.name },
                                     fontColor: fontColor,
                                     size: 22,
                                     action: {
-                                        if viewModel.isLocationSaved(name: weather.location.name) {
+                                        if appState.savedLocations.contains(where: { $0.name == weather.location.name }) {
                                             showRemoveAlert = true
                                         } else {
                                             let location = SavedLocation(
@@ -91,7 +92,7 @@ struct WeatherPageView: View {
                                                 lon: weather.location.lon,
                                                 country: weather.location.country
                                             )
-                                            viewModel.toggleLocationFromSearch(location: location)
+                                            searchViewModel.toggleLocationFromSearch(location: location)
                                         }
                                     }
                                 )
@@ -103,7 +104,7 @@ struct WeatherPageView: View {
                                             lon: weather.location.lon,
                                             country: weather.location.country
                                         )
-                                        viewModel.toggleLocationFromSearch(location: location)
+                                        searchViewModel.toggleLocationFromSearch(location: location)
                                     }
                                     Button("Cancel", role: .cancel) { }
                                 } message: {
