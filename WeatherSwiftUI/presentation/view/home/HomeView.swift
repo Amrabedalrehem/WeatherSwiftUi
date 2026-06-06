@@ -2,7 +2,8 @@ import SwiftUI
 
 struct ContentView: View {
 
-    @EnvironmentObject var viewModel: WeatherViewModel
+    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var viewModel: ContentViewModel
     @State private var navigateToManage: Bool = false
     @State private var selectedDay: ForecastDay? = nil
     @State private var currentPage: Int = 0
@@ -11,8 +12,8 @@ struct ContentView: View {
 
     private var allWeatherPages: [WeatherResponse] {
         var pages: [WeatherResponse] = []
-        if let current = viewModel.weatherResponse { pages.append(current) }
-        pages.append(contentsOf: viewModel.savedWeatherResponses)
+        if let current = appState.weatherResponse { pages.append(current) }
+        pages.append(contentsOf: appState.savedWeatherResponses)
         return pages
     }
 
@@ -80,12 +81,12 @@ struct ContentView: View {
                         .padding(.bottom, 30)
                     }
                 }
-              if viewModel.showOfflineBanner {
+              if appState.showOfflineBanner {
                     networkBanner(icon: "wifi.slash", message: "No Internet • Showing cached data", color: .red)
                         .transition(.move(edge: .top).combined(with: .opacity))
                         .zIndex(999)
                 }
-                if viewModel.showConnectedBanner {
+                if appState.showConnectedBanner {
                     networkBanner(icon: "wifi", message: "Back Online • Refreshing…", color: .green)
                         .transition(.move(edge: .top).combined(with: .opacity))
                         .zIndex(998)
@@ -96,7 +97,7 @@ struct ContentView: View {
             .toolbarBackground(.hidden, for: .navigationBar)
             .preferredColorScheme(.dark)
             .navigationDestination(isPresented: $navigateToManage) {
-                ManageCitiesView().environmentObject(viewModel)
+                ManageCitiesView()
             }
             .navigationDestination(item: $selectedDay) { day in
                 HourlyView(
@@ -115,8 +116,27 @@ struct ContentView: View {
             .onChange(of: navigateToManage) { _, isShowing in
                 if !isShowing { Task { await viewModel.fetchAllSavedWeather() } }
             }
-            .onChange(of: viewModel.savedWeatherResponses.count) { _, _ in
-                let maxPage = allWeatherPages.count - 1
+            .onChange(of: appState.savedLocations.count) { _, _ in
+                 let savedNames = Set(appState.savedLocations.map { $0.name.lowercased() })
+                let staleCount = appState.savedWeatherResponses.filter { response in
+                    !savedNames.contains(response.location.name.lowercased())
+                }.count
+
+                if staleCount > 0 {
+                    let newTotal = (appState.weatherResponse != nil ? 1 : 0)
+                        + appState.savedWeatherResponses.count - staleCount
+                    if currentPage >= newTotal {
+                        currentPage = max(0, newTotal - 1)
+                    }
+                    withAnimation {
+                        appState.savedWeatherResponses.removeAll { response in
+                            !savedNames.contains(response.location.name.lowercased())
+                        }
+                    }
+                }
+            }
+            .onChange(of: appState.savedWeatherResponses.count) { _, _ in
+                  let maxPage = allWeatherPages.count - 1
                 if currentPage > maxPage {
                     withAnimation { currentPage = max(0, maxPage) }
                 }
@@ -134,7 +154,7 @@ struct ContentView: View {
     private var mainContentStateView: some View {
         if isInitialLoad
             || (viewModel.isLoading && allWeatherPages.isEmpty)
-            || (viewModel.locationAuthStatus == .notDetermined && allWeatherPages.isEmpty) {
+            || (appState.locationAuthStatus == .notDetermined && allWeatherPages.isEmpty) {
             ZStack {
                 Color(red: 0.1, green: 0.25, blue: 0.45).ignoresSafeArea()
                 ProgressView("Loading Weather...")
@@ -145,7 +165,7 @@ struct ContentView: View {
                 ForEach(Array(allWeatherPages.enumerated()), id: \.offset) { index, weather in
                     WeatherPageView(
                         weather: weather,
-                        isCurrentLocation: index == 0 && viewModel.weatherResponse != nil,
+                        isCurrentLocation: index == 0 && appState.weatherResponse != nil,
                         selectedDay: $selectedDay
                     )
                     .tag(index)

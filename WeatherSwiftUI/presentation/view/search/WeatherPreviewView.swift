@@ -10,7 +10,7 @@ import SwiftUI
 struct WeatherPreviewView: View {
     let weather: WeatherResponse
     @Environment(\.dismiss) var dismiss
-    @EnvironmentObject var viewModel: WeatherViewModel
+    @EnvironmentObject var appState: AppState
     @State private var selectedDay: ForecastDay?
 
     var body: some View {
@@ -19,7 +19,7 @@ struct WeatherPreviewView: View {
         ZStack(alignment: .topLeading) {
               WeatherPageView(
                 weather: weather,
-                isCurrentLocation: viewModel.weatherResponse?.location.name == weather.location.name,
+                isCurrentLocation: appState.weatherResponse?.location.name == weather.location.name,
                 selectedDay: $selectedDay
             )
 

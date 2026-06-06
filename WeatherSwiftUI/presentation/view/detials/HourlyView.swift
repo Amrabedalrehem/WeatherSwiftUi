@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct HourlyView: View {
-
+   
     let forecastDay: ForecastDay
     let isDay: Bool
 

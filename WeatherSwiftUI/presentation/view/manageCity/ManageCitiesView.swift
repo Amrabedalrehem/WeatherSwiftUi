@@ -3,7 +3,8 @@ import SwiftUI
 
 struct ManageCitiesView: View {
 
-    @EnvironmentObject var viewModel: WeatherViewModel
+    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var viewModel: ManageCitiesViewModel
     @Environment(\.dismiss) var dismiss
 
     @State private var selectedPreviewWeather: WeatherResponse? = nil
@@ -14,17 +15,17 @@ struct ManageCitiesView: View {
     @State private var locationToSetHome: SavedLocation? = nil
 
     private var currentCondition: String {
-        viewModel.weatherResponse?.current.condition.text ?? ""
+        appState.weatherResponse?.current.condition.text ?? ""
     }
     private func checkIfIsDay() -> Bool {
-        (viewModel.weatherResponse?.current.is_day ?? 1) == 1
+        (appState.weatherResponse?.current.is_day ?? 1) == 1
     }
     private var fontColor: Color { checkIfIsDay() ? .black : .white }
 
     var body: some View {
         ZStack {
             ManageCitiesBackground(
-                weatherResponse: viewModel.weatherResponse,
+                weatherResponse: appState.weatherResponse,
                 currentCondition: currentCondition,
                 isDay: checkIfIsDay()
             )
@@ -39,7 +40,7 @@ struct ManageCitiesView: View {
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 28) {
 
-                        if viewModel.weatherResponse != nil {
+                        if appState.weatherResponse != nil {
                             VStack(alignment: .leading, spacing: 12) {
                                 SectionLabel(icon: "house.fill", title: "DEFAULT CITY", fontColor: fontColor)
                                 homeCityCard
@@ -47,10 +48,10 @@ struct ManageCitiesView: View {
                             .padding(.horizontal, 20)
                         }
 
-                        if !viewModel.savedLocations.isEmpty {
+                        if !appState.savedLocations.isEmpty {
                             SavedCitiesSection(
-                                savedLocations: viewModel.savedLocations,
-                                savedWeatherResponses: viewModel.savedWeatherResponses,
+                                savedLocations: appState.savedLocations,
+                                savedWeatherResponses: appState.savedWeatherResponses,
                                 fontColor: fontColor,
                                 onRemove: { location in
                                     locationToRemove = location
@@ -62,14 +63,13 @@ struct ManageCitiesView: View {
                                 },
                                 onTap: { location in
                                     Task {
-                                        let liveWeather = viewModel.savedWeatherResponses.first {
+                                        let liveWeather = appState.savedWeatherResponses.first {
                                             $0.location.name.lowercased() == location.name.lowercased()
                                         }
                                         if let w = liveWeather {
                                             selectedPreviewWeather = w
-                                        } else if let result = try? await viewModel.searchCity(query: location.name) {
-                                            selectedPreviewWeather = result
-                                        }
+                                        } else {
+                                            }
                                     }
                                 }
                             )
@@ -87,7 +87,7 @@ struct ManageCitiesView: View {
             WeatherPreviewView(weather: weather)
         }
         .navigationDestination(isPresented: $navigateToSearch) {
-            SearchView().environmentObject(viewModel)
+            SearchView()
         }
         .onAppear {
             viewModel.fetchSavedLocations()
@@ -97,7 +97,7 @@ struct ManageCitiesView: View {
             Button("Remove", role: .destructive) {
                 if let location = locationToRemove {
                     withAnimation(.spring()) {
-                        viewModel.toggleLocationFromSearch(location: location)
+                        viewModel.removeLocation(location)
                     }
                 }
             }
@@ -112,7 +112,7 @@ struct ManageCitiesView: View {
                 if let location = locationToSetHome {
                     withAnimation(.spring()) {
                         viewModel.setCustomDefaultCity(location.name)
-                        viewModel.toggleLocationFromSearch(location: location)
+                        viewModel.removeLocation(location)
                     }
                 }
             }
@@ -145,7 +145,7 @@ struct ManageCitiesView: View {
 
     private var homeCityCard: some View {
         Group {
-            if let w = viewModel.weatherResponse {
+            if let w = appState.weatherResponse {
                 GlassCardView {
                     HStack(spacing: 0) {
                         VStack(alignment: .leading, spacing: 4) {

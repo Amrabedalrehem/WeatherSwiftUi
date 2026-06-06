@@ -3,7 +3,8 @@ import SwiftUI
 
 struct SearchView: View {
 
-    @EnvironmentObject var viewModel: WeatherViewModel
+    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var viewModel: SearchViewModel
     @Environment(\.dismiss) var dismiss
 
     @State private var searchText: String = ""
@@ -14,10 +15,10 @@ struct SearchView: View {
     @State private var selectedPreviewWeather: WeatherResponse? = nil
 
     private var currentCondition: String {
-        viewModel.weatherResponse?.current.condition.text ?? ""
+        appState.weatherResponse?.current.condition.text ?? ""
     }
     private func checkIfIsDay() -> Bool {
-        (viewModel.weatherResponse?.current.is_day ?? 1) == 1
+        (appState.weatherResponse?.current.is_day ?? 1) == 1
     }
     private var fontColor: Color { checkIfIsDay() ? .black : .white }
 
@@ -33,7 +34,7 @@ struct SearchView: View {
     var body: some View {
         ZStack {
             SearchBackground(
-                weatherResponse: viewModel.weatherResponse,
+                weatherResponse: appState.weatherResponse,
                 currentCondition: currentCondition,
                 isDay: checkIfIsDay()
             )
@@ -101,8 +102,8 @@ struct SearchView: View {
             SearchResultCard(
                 weather: weather,
                 fontColor: fontColor,
-                isSaved: viewModel.savedLocations.contains { $0.name == weather.location.name },
-                isHome: viewModel.weatherResponse?.location.name == weather.location.name,
+                isSaved: appState.savedLocations.contains { $0.name == weather.location.name },
+                isHome: appState.weatherResponse?.location.name == weather.location.name,
                 onToggleSave: {
                     let location = SavedLocation(
                         name: weather.location.name,
