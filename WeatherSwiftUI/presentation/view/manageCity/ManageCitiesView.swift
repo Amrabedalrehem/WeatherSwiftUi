@@ -1,10 +1,3 @@
-//
-//  ManageCitiesView.swift
-//  WeatherSwiftUI
-//
-//  Created by JETSMobileLabMini2 on 02/06/2026.
-//
-
 
 import SwiftUI
 
@@ -17,8 +10,10 @@ struct ManageCitiesView: View {
     @State private var navigateToSearch: Bool = false
     @State private var showRemoveAlert: Bool = false
     @State private var locationToRemove: SavedLocation? = nil
+    @State private var showSetHomeAlert: Bool = false
+    @State private var locationToSetHome: SavedLocation? = nil
 
-      private var currentCondition: String {
+    private var currentCondition: String {
         viewModel.weatherResponse?.current.condition.text ?? ""
     }
     private func checkIfIsDay() -> Bool {
@@ -26,69 +21,60 @@ struct ManageCitiesView: View {
     }
     private var fontColor: Color { checkIfIsDay() ? .black : .white }
 
-
-
-     var body: some View {
+    var body: some View {
         ZStack {
-             if viewModel.weatherResponse != nil {
-                VideoBackgroundView(condition: currentCondition, isDay: checkIfIsDay())
-                    .ignoresSafeArea()
-            } else {
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.05, green: 0.12, blue: 0.28),
-                        Color(red: 0.10, green: 0.22, blue: 0.42)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
-            }
-
-            Color.black.opacity(checkIfIsDay() ? 0.15 : 0.35)
-                .ignoresSafeArea()
+            ManageCitiesBackground(
+                weatherResponse: viewModel.weatherResponse,
+                currentCondition: currentCondition,
+                isDay: checkIfIsDay()
+            )
 
             VStack(spacing: 0) {
+                ManageCitiesHeader(fontColor: fontColor)
 
-                  HStack {
-                    Button(action: { dismiss() }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 16, weight: .semibold))
-                            Text("Home")
-                                .font(.system(size: 16, weight: .medium))
-                        }
-                        .foregroundColor(fontColor)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(.ultraThinMaterial, in: Capsule())
-                    }
-
-                    Spacer()
-
-                    Text("Manage Cities")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(fontColor)
-
-                    Spacer()
-
-                    Color.clear.frame(width: 80, height: 36)
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 60)
-                .padding(.bottom, 12)
-
-                   searchBarButton
+                searchBarButton
                     .padding(.horizontal, 20)
                     .padding(.bottom, 12)
 
-                   ScrollView(.vertical, showsIndicators: false) {
+                ScrollView(.vertical, showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 28) {
 
+                        if viewModel.weatherResponse != nil {
+                            VStack(alignment: .leading, spacing: 12) {
+                                SectionLabel(icon: "house.fill", title: "DEFAULT CITY", fontColor: fontColor)
+                                homeCityCard
+                            }
+                            .padding(.horizontal, 20)
+                        }
+
                         if !viewModel.savedLocations.isEmpty {
-                            savedCitiesSection
-                                .padding(.horizontal, 20)
-                                .padding(.bottom, 40)
+                            SavedCitiesSection(
+                                savedLocations: viewModel.savedLocations,
+                                savedWeatherResponses: viewModel.savedWeatherResponses,
+                                fontColor: fontColor,
+                                onRemove: { location in
+                                    locationToRemove = location
+                                    showRemoveAlert = true
+                                },
+                                onSetHome: { location in
+                                    locationToSetHome = location
+                                    showSetHomeAlert = true
+                                },
+                                onTap: { location in
+                                    Task {
+                                        let liveWeather = viewModel.savedWeatherResponses.first {
+                                            $0.location.name.lowercased() == location.name.lowercased()
+                                        }
+                                        if let w = liveWeather {
+                                            selectedPreviewWeather = w
+                                        } else if let result = try? await viewModel.searchCity(query: location.name) {
+                                            selectedPreviewWeather = result
+                                        }
+                                    }
+                                }
+                            )
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 40)
                         }
                     }
                     .padding(.top, 20)
@@ -121,193 +107,71 @@ struct ManageCitiesView: View {
                 Text("Are you sure you want to remove \(location.name) from your favorites?")
             }
         }
+        .alert("Change Default Location?", isPresented: $showSetHomeAlert) {
+            Button("Change") {
+                if let location = locationToSetHome {
+                    withAnimation(.spring()) {
+                        viewModel.setCustomDefaultCity(location.name)
+                        viewModel.toggleLocationFromSearch(location: location)
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            if let location = locationToSetHome {
+                Text("Are you sure you want to set \(location.name) as your default location? It will be removed from saved cities.")
+            }
+        }
     }
+
     private var searchBarButton: some View {
-        Button {
-            navigateToSearch = true
-        } label: {
+        Button { navigateToSearch = true } label: {
             HStack(spacing: 12) {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.white.opacity(0.7))
                     .font(.system(size: 16, weight: .semibold))
-
                 Text("Search city...")
                     .foregroundColor(.white.opacity(0.5))
                     .font(.system(size: 16))
-                
                 Spacer()
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(.white.opacity(0.3), lineWidth: 1)
-            )
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(.white.opacity(0.3), lineWidth: 1))
         }
         .buttonStyle(.plain)
     }
 
-      private var savedCitiesSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 6) {
-                Image(systemName: "star.fill")
-                    .foregroundColor(.yellow)
-                    .font(.system(size: 11))
-                Text("SAVED CITIES")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(fontColor.opacity(0.75))
-            }
-
-            VStack(spacing: 12) {
-                ForEach(viewModel.savedLocations, id: \.name) { location in
-                    savedCityCard(location: location)
-                }
-            }
-        }
-    }
-
-    private func savedCityCard(location: SavedLocation) -> some View {
-          let liveWeather = viewModel.savedWeatherResponses.first {
-            $0.location.name.lowercased() == location.name.lowercased()
-        }
-
-     
-        return GlassCardView {
-            HStack(spacing: 0) {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 5) {
-                        Text(location.name)
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(fontColor)
-                    }
-
-                    if let w = liveWeather {
-                        Text(w.current.condition.text)
-                            .font(.system(size: 13))
-                            .foregroundColor(fontColor.opacity(0.65))
-                        Text("H:\(Int(w.forecast.forecastday.first?.day.maxtemp_c ?? 0))°  L:\(Int(w.forecast.forecastday.first?.day.mintemp_c ?? 0))°")
-                            .font(.system(size: 12))
-                            .foregroundColor(fontColor.opacity(0.5))
-                    } else {
-                        Text(location.country)
-                            .font(.system(size: 13))
-                            .foregroundColor(fontColor.opacity(0.55))
-                    }
-                }
-
-                Spacer()
-
-                  VStack(alignment: .trailing, spacing: 8) {
-                    if let w = liveWeather {
-                        Text("\(Int(w.current.temp_c))°")
-                            .font(.system(size: 44, weight: .thin))
-                            .foregroundColor(fontColor)
-                    }
-
-                    Button {
-                        locationToRemove = location
-                        showRemoveAlert = true
-                    } label: {
-                        Image(systemName: "star.fill")
-                            .foregroundColor(.yellow)
-                            .font(.system(size: 18))
-                    }
-                }
-            }
-        }
-        .modifier(SwipeToDeleteModifier {
-            locationToRemove = location
-            showRemoveAlert = true
-        })
-        .onTapGesture {
-            Task {
-                if let w = liveWeather {
-                    selectedPreviewWeather = w
-                } else {
-                    if let result = try? await viewModel.searchCity(query: location.name) {
-                        selectedPreviewWeather = result
-                    }
-                }
-            }
-        }
-    }
-
-
-
-    private func formatLocalTime(_ localtime: String) -> String {
-          let parts = localtime.split(separator: " ")
-        guard parts.count == 2 else { return "" }
-        let timePart = String(parts[1])
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm"
-        guard let date = formatter.date(from: timePart) else { return timePart }
-        let out = DateFormatter()
-        out.dateFormat = "h:mm a"
-        return out.string(from: date)
-    }
-}
-struct SwipeToDeleteModifier: ViewModifier {
-    var action: () -> Void
-    @State private var offset: CGFloat = 0
-    @State private var isSwiped: Bool = false
-
-    func body(content: Content) -> some View {
-        ZStack(alignment: .trailing) {
-             ZStack(alignment: .trailing) {
-                RoundedRectangle(cornerRadius: 24)
-                     .fill(Color.red.opacity(0.85))
-                
-                Image(systemName: "trash.fill")
-                    .foregroundColor(.white)
-                    .font(.system(size: 22, weight: .semibold))
-                    .fixedSize()
-                    .padding(.trailing, 24)
-            }
-            .frame(width: max(-offset, 0))
-            .clipped()
-            .onTapGesture {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                    offset = 0
-                    isSwiped = false
-                }
-                action()
-            }
-            
-             content
-                .offset(x: offset)
-                .gesture(
-                    DragGesture()
-                        .onChanged { value in
-                            let translation = value.translation.width
-                            if !isSwiped && translation < 0 {
-                                offset = translation
-                            } else if isSwiped {
-                                offset = min(0, -80 + translation)
-                            }
+    private var homeCityCard: some View {
+        Group {
+            if let w = viewModel.weatherResponse {
+                GlassCardView {
+                    HStack(spacing: 0) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(w.location.name)
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(fontColor)
+                            Text(w.current.condition.text)
+                                .font(.system(size: 13))
+                                .foregroundColor(fontColor.opacity(0.65))
+                            Text("H:\(Int(w.forecast.forecastday.first?.day.maxtemp_c ?? 0))°  L:\(Int(w.forecast.forecastday.first?.day.mintemp_c ?? 0))°")
+                                .font(.system(size: 12))
+                                .foregroundColor(fontColor.opacity(0.5))
                         }
-                        .onEnded { value in
-                            withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
-                                if offset < -50 {
-                                    offset = -80
-                                    isSwiped = true
-                                } else {
-                                    offset = 0
-                                    isSwiped = false
-                                }
-                            }
-                        }
-                )
-                .simultaneousGesture(
-                    TapGesture().onEnded {
-                        if isSwiped {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                offset = 0
-                                isSwiped = false
-                            }
+                        Spacer()
+                        VStack(alignment: .trailing, spacing: 8) {
+                            Text("\(Int(w.current.temp_c))°")
+                                .font(.system(size: 44, weight: .thin))
+                                .foregroundColor(fontColor)
+                            Image(systemName: "house.fill")
+                                .foregroundColor(fontColor)
+                                .font(.system(size: 18))
                         }
                     }
-                )
+                }
+                .onTapGesture { dismiss() }
+            }
         }
     }
 }
